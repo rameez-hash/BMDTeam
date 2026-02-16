@@ -1,0 +1,3 @@
+{
+  "/api/leave/calculate-balance/route": "app/api/leave/calculate-balance/route.js"
+}

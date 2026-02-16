@@ -1,0 +1,8 @@
+electron/
+deploy/
+scripts/
+.env
+.env.local
+.env.production.local
+public/uploads/profile/*
+public/uploads/onboarding/*

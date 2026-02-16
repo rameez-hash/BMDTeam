@@ -1,0 +1,3 @@
+{
+  "/api/employees/check-periods/route": "app/api/employees/check-periods/route.js"
+}
