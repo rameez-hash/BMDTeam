@@ -50,3 +50,5 @@ next-env.d.ts
 .env-temp
 .env.vercel
 .env.vercel-check
+
+electron/node_modules/
