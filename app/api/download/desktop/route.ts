@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Allow up to 60s for large file streaming
 
 // GitHub Release asset details for private repo download proxy
 const GITHUB_REPO = 'rameez-hash/BMDHRMS';
 const RELEASE_TAG = 'v1.0.0';
 
-const ASSETS: Record<string, string> = {
-  win: 'BMD.HRMS.Setup.1.0.0.exe',
-  mac: 'BMD.HRMS-1.0.0.dmg',
+const ASSETS: Record<string, { name: string; mime: string }> = {
+  win: { name: 'BMD.HRMS.Setup.1.0.0.exe', mime: 'application/x-msdownload' },
+  mac: { name: 'BMD.HRMS-1.0.0.dmg', mime: 'application/x-apple-diskimage' },
 };
 
 export async function GET(request: NextRequest) {
   try {
     const platform = request.nextUrl.searchParams.get('platform') || 'win';
-    const ASSET_NAME = ASSETS[platform] || ASSETS.win;
+    const assetInfo = ASSETS[platform] || ASSETS.win;
 
     const githubToken = process.env.GITHUB_TOKEN;
     if (!githubToken) {
@@ -37,13 +38,13 @@ export async function GET(request: NextRequest) {
     }
 
     const release = await releaseRes.json();
-    const asset = release.assets?.find((a: { name: string }) => a.name === ASSET_NAME);
+    const asset = release.assets?.find((a: { name: string }) => a.name === assetInfo.name);
 
     if (!asset) {
-      return NextResponse.json({ error: 'Asset not found. macOS build may still be in progress.' }, { status: 404 });
+      return NextResponse.json({ error: 'Asset not found. Build may still be in progress.' }, { status: 404 });
     }
 
-    // Request the asset with octet-stream accept header → GitHub returns 302 redirect to a temporary public S3 URL
+    // Get the download URL by following GitHub's redirect
     const assetRes = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/releases/assets/${asset.id}`,
       {
@@ -51,28 +52,30 @@ export async function GET(request: NextRequest) {
           Authorization: `token ${githubToken}`,
           Accept: 'application/octet-stream',
         },
-        redirect: 'manual', // Don't follow redirect, we'll send it to client
+        redirect: 'manual',
       }
     );
 
-    // GitHub returns 302 with a temporary signed URL that's publicly accessible
     const redirectUrl = assetRes.headers.get('location');
-    if (redirectUrl) {
-      return NextResponse.redirect(redirectUrl);
+    if (!redirectUrl) {
+      return NextResponse.json({ error: 'Download failed' }, { status: 500 });
     }
 
-    // Fallback: if no redirect, stream the response
-    if (assetRes.ok && assetRes.body) {
-      return new NextResponse(assetRes.body as ReadableStream, {
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Disposition': `attachment; filename="${ASSET_NAME}"`,
-          'Content-Length': String(asset.size),
-        },
-      });
+    // Stream the file through our domain (avoids browser virus scan issues with 3rd-party redirects)
+    const fileRes = await fetch(redirectUrl);
+    if (!fileRes.ok || !fileRes.body) {
+      return NextResponse.json({ error: 'Download failed' }, { status: 500 });
     }
 
-    return NextResponse.json({ error: 'Download failed' }, { status: 500 });
+    return new NextResponse(fileRes.body as ReadableStream, {
+      headers: {
+        'Content-Type': assetInfo.mime,
+        'Content-Disposition': `attachment; filename="${assetInfo.name}"`,
+        'Content-Length': String(asset.size),
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
   } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json({ error: 'Download failed' }, { status: 500 });

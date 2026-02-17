@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win && node -e \"require('rcedit').rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico'})\" && npx electron-builder --win nsis --prepackaged output/win-unpacked",
+    "build:win": "electron-builder --win && node -e \"require('rcedit').rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico','version-string':{CompanyName:'BMD Digital',FileDescription:'BMD HRMS Desktop App',ProductName:'BMD HRMS',LegalCopyright:'Copyright 2026 BMD Digital'}})\" && npx electron-builder --win nsis --prepackaged output/win-unpacked",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
