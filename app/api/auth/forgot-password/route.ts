@@ -49,10 +49,8 @@ export async function POST(request: NextRequest) {
       data: { resetToken, resetTokenExp },
     });
 
-    // Build reset link
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                    request.headers.get('origin') || 
-                    `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+    // Build reset link - use production URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hrms.bmdhouse.com';
     const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // Send email
