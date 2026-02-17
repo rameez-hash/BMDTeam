@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// Set Pakistan timezone for ALL server-side Date operations
+process.env.TZ = 'Asia/Karachi';
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [

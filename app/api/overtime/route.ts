@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
             userId: emp.userId,
             type: 'OVERTIME',
             title: 'Overtime Recorded',
-            message: `${overtimeHours} hours of overtime recorded for ${new Date(date).toLocaleDateString()}.`,
+            message: `${overtimeHours} hours of overtime recorded for ${parseDateUTC(date).toLocaleDateString()}.`,
             module: 'overtime',
             resourceId: record.id,
             link: '/dashboard/overtime',

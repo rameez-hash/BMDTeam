@@ -628,7 +628,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(html, {
         headers: {
           'Content-Type': 'text/html',
-          'Content-Disposition': `attachment; filename="payslips_bulk_${new Date().toISOString().split('T')[0]}.html"`,
+          'Content-Disposition': `attachment; filename="payslips_bulk_${formatDate(new Date())}.html"`,
         },
       });
     }

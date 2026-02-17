@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { formatDate } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
         return {
           id: emp.id,
           name: `${emp.firstName} ${emp.lastName}`,
-          date: thisYearBirthday.toISOString().split('T')[0],
+          date: formatDate(thisYearBirthday),
           department: emp.department?.name,
           profileImage: emp.profileImage,
           daysUntil,

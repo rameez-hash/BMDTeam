@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
-import { formatDate, formatTime, getMonthRange, getWorkDays } from '@/lib/utils';
+import { formatDate, formatTime, getMonthRange, getWorkDays , parseDateUTC } from '@/lib/utils';
 import fs from 'fs';
 import path from 'path';
 
@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
 
     let start: Date, end: Date;
     if (startDate && endDate) {
-      start = new Date(startDate);
-      end = new Date(endDate);
+      start = parseDateUTC(startDate);
+      end = parseDateUTC(endDate);
       end.setHours(23, 59, 59, 999);
     } else {
       const range = getMonthRange(month, year);

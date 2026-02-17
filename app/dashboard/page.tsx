@@ -168,7 +168,7 @@ export default function DashboardPage() {
           onLeave: arr.filter((r: { status: string }) => r.status === 'ON_LEAVE').length,
         });
         // Store last 5 days (most recent first)
-        const today = new Date().toISOString().split('T')[0];
+        const today = (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`; })();
         const last5 = arr
           .filter((r: { date: string }) => (r.date.length > 10 ? r.date.substring(0, 10) : r.date) <= today)
           .sort((a: { date: string }, b: { date: string }) => b.date.localeCompare(a.date))

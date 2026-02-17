@@ -147,7 +147,7 @@ export default function AttendanceCorrectionTab({ employeeId }: { employeeId: st
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Attendance Correction Requests</h3>
-        <Button onClick={() => { const today = new Date().toISOString().split('T')[0]; setFormData({ date: today, requestType: 'MISSING_CHECKOUT', requestedCheckIn: '', requestedCheckOut: '', reason: '' }); setShowForm(true); }} size="sm">
+        <Button onClick={() => { const today = (() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`; })(); setFormData({ date: today, requestType: 'MISSING_CHECKOUT', requestedCheckIn: '', requestedCheckOut: '', reason: '' }); setShowForm(true); }} size="sm">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           New Request
         </Button>
@@ -162,7 +162,7 @@ export default function AttendanceCorrectionTab({ employeeId }: { employeeId: st
               type="date"
               value={formData.date}
               min="2024-01-01"
-              max={new Date().toISOString().split('T')[0]}
+              max={(() => { const _d = new Date(); return `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`; })()}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />

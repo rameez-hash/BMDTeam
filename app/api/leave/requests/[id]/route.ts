@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { formatDate } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
@@ -141,7 +142,7 @@ export async function PUT(
             },
           },
         });
-        const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
+        const holidayDates = new Set(holidays.map(h => formatDate(h.date)));
 
         // Mark attendance as ON_LEAVE for working days only (skip weekends & holidays)
         const currentDate = new Date(leaveRequest.startDate);
@@ -149,7 +150,7 @@ export async function PUT(
         
         while (currentDate <= endDate) {
           const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-          const dateStr = currentDate.toISOString().split('T')[0];
+          const dateStr = formatDate(currentDate);
           const isWorkDay = shiftWorkDays.includes(dayOfWeek);
           const isHoliday = holidayDates.has(dateStr);
 

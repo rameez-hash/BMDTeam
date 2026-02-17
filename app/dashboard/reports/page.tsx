@@ -235,21 +235,22 @@ function ReportsPageContent() {
           ]} className="w-48" />
           <Select label="Quick Range" value="" onChange={(e) => {
             const now = new Date();
+            const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             if (e.target.value === 'thisMonth') {
-              setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
-              setEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]);
+              setStartDate(fmt(new Date(now.getFullYear(), now.getMonth(), 1)));
+              setEndDate(fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0)));
             } else if (e.target.value === 'lastMonth') {
-              setStartDate(new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0]);
-              setEndDate(new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]);
+              setStartDate(fmt(new Date(now.getFullYear(), now.getMonth() - 1, 1)));
+              setEndDate(fmt(new Date(now.getFullYear(), now.getMonth(), 0)));
             } else if (e.target.value === 'last3') {
-              setStartDate(new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0]);
-              setEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]);
+              setStartDate(fmt(new Date(now.getFullYear(), now.getMonth() - 2, 1)));
+              setEndDate(fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0)));
             } else if (e.target.value === 'thisYear') {
-              setStartDate(new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]);
-              setEndDate(new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0]);
+              setStartDate(fmt(new Date(now.getFullYear(), 0, 1)));
+              setEndDate(fmt(new Date(now.getFullYear(), 11, 31)));
             } else if (e.target.value === 'lastYear') {
-              setStartDate(new Date(now.getFullYear() - 1, 0, 1).toISOString().split('T')[0]);
-              setEndDate(new Date(now.getFullYear() - 1, 11, 31).toISOString().split('T')[0]);
+              setStartDate(fmt(new Date(now.getFullYear() - 1, 0, 1)));
+              setEndDate(fmt(new Date(now.getFullYear() - 1, 11, 31)));
             }
           }} options={[
             { value: '', label: 'Select...' },

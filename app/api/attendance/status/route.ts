@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
-import { calculateTotalBreakMinutes } from '@/lib/utils';
+import { calculateTotalBreakMinutes , formatDate } from '@/lib/utils';
 
 // GET /api/attendance/status - Get current attendance status
 export async function GET(request: NextRequest) {
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           lateMinutes: activeAttendance.lateMinutes,
           shift: employee.shift,
           breaks: activeAttendance.breaks,
-          attendanceDate: activeAttendance.date.toISOString().slice(0, 10),
+          attendanceDate: formatDate(activeAttendance.date),
         },
       });
     }
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
             lateMinutes: lastCompleted.lateMinutes,
             shift: employee.shift,
             breaks: lastCompleted.breaks,
-            attendanceDate: lastCompleted.date.toISOString().slice(0, 10),
+            attendanceDate: formatDate(lastCompleted.date),
             canCheckInAgain,
             remainingGapMinutes,
             minCheckInGap,

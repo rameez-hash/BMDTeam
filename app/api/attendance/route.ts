@@ -116,8 +116,8 @@ export async function GET(request: NextRequest) {
     }> = [];
     
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      const start = parseDateUTC(startDate);
+      const end = parseDateUTC(endDate);
       
       // Fetch holidays in range
       const holidays = await prisma.holiday.findMany({

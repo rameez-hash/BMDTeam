@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
-import { getPaginationParams } from '@/lib/utils';
+import { getPaginationParams , parseDateUTC } from '@/lib/utils';
 
 // GET /api/activity-logs - List activity logs (Admin/HR only)
 export async function GET(request: NextRequest) {
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) (where.createdAt as Record<string, Date>).gte = new Date(startDate);
-      if (endDate) (where.createdAt as Record<string, Date>).lte = new Date(endDate);
+      if (startDate) (where.createdAt as Record<string, Date>).gte = parseDateUTC(startDate);
+      if (endDate) (where.createdAt as Record<string, Date>).lte = parseDateUTC(endDate);
     }
 
     // Non-admin users can only see limited logs (not admin-only actions)

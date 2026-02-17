@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { parseDateUTC } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
@@ -82,8 +83,8 @@ export async function POST(
         companyName,
         jobTitle,
         location,
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: parseDateUTC(startDate),
+        endDate: endDate ? parseDateUTC(endDate) : null,
         isCurrent: isCurrent || false,
         description,
       },

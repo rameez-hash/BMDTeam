@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check leave balance
-    const year = new Date(startDate).getFullYear();
+    const year = parseDateUTC(startDate).getFullYear();
     const leaveBalance = await prisma.leaveBalance.findUnique({
       where: {
         employeeId_leaveTypeId_year: {
@@ -174,8 +174,8 @@ export async function POST(request: NextRequest) {
         status: { in: ['PENDING', 'APPROVED'] },
         OR: [
           {
-            startDate: { lte: new Date(endDate) },
-            endDate: { gte: new Date(startDate) },
+            startDate: { lte: parseDateUTC(endDate) },
+            endDate: { gte: parseDateUTC(startDate) },
           },
         ],
       },

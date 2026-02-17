@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import { parseDateUTC } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
@@ -24,8 +25,8 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'json';
 
     const dateFilter = {
-      ...(startDate && { gte: new Date(startDate) }),
-      ...(endDate && { lte: new Date(endDate + 'T23:59:59.999Z') }),
+      ...(startDate && { gte: parseDateUTC(startDate) }),
+      ...(endDate && { lte: new Date(endDate + 'T23:59:59') }),
     };
 
     const employeeFilter: Record<string, unknown> = {
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
         employee: `${a.employee.firstName} ${a.employee.lastName}`,
         code: a.employee.employeeCode,
         department: a.employee.department?.name || '—',
-        date: a.date.toISOString().split('T')[0],
+        date: formatDate(a.date),
         checkIn: a.checkIn ? a.checkIn.toISOString() : null,
         checkOut: a.checkOut ? a.checkOut.toISOString() : null,
         status: a.status,
@@ -222,8 +223,8 @@ export async function GET(request: NextRequest) {
         code: lr.employee.employeeCode,
         department: lr.employee.department?.name || '—',
         leaveType: lr.leaveType?.name || '—',
-        startDate: lr.startDate.toISOString().split('T')[0],
-        endDate: lr.endDate.toISOString().split('T')[0],
+        startDate: formatDate(lr.startDate),
+        endDate: formatDate(lr.endDate),
         totalDays: lr.totalDays,
         status: lr.status,
         reason: lr.reason || '—',
@@ -408,8 +409,8 @@ export async function GET(request: NextRequest) {
         department: e.department?.name || '—',
         designation: e.designation || '—',
         employmentType: e.employmentType,
-        joiningDate: e.joiningDate ? e.joiningDate.toISOString().split('T')[0] : '—',
-        confirmationDate: e.confirmationDate ? e.confirmationDate.toISOString().split('T')[0] : '—',
+        joiningDate: e.joiningDate ? formatDate(e.joiningDate) : '—',
+        confirmationDate: e.confirmationDate ? formatDate(e.confirmationDate) : '—',
         basicSalary: e.salary?.basicSalary || 0,
         grossSalary: e.salary?.grossSalary || 0,
         netSalary: e.salary?.netSalary || 0,
@@ -435,7 +436,7 @@ export async function GET(request: NextRequest) {
           code: e.employeeCode,
           department: e.department?.name || '—',
           designation: e.designation || '—',
-          joiningDate: e.joiningDate?.toISOString().split('T')[0],
+          joiningDate: e.joiningDate ? formatDate(e.joiningDate) : null,
         }));
 
       reportData = {
@@ -576,7 +577,7 @@ function generateCSV(reportType: string, data: Record<string, unknown>): string 
 // ═══════════ PDF HTML GENERATOR ═══════════
 function generateReportHTML(reportType: string, data: Record<string, unknown>, startDate: string | null, endDate: string | null): string {
   const formatCurrency = (amount: number) => 'Rs ' + Math.round(amount || 0).toLocaleString('en-PK');
-  const formatDate = (date: string | Date) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const formatDate = (date: string | Date) => parseDateUTC(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const d = data as Record<string, unknown>;
 
   let reportContent = '';

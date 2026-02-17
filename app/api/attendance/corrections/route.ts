@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     const approverIds = await getUsersWithPermission('attendance', 'approve', employee.departmentId, user!.userId);
     await notifyMany(approverIds, {
       title: 'Attendance Correction Request',
-      message: `${employee.firstName} ${employee.lastName} requested attendance correction for ${new Date(date).toLocaleDateString()}`,
+      message: `${employee.firstName} ${employee.lastName} requested attendance correction for ${parseDateUTC(date).toLocaleDateString()}`,
       type: 'ATTENDANCE_CORRECTION',
       module: 'attendance',
       resourceId: correction.id,

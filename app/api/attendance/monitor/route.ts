@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
-import { formatDate, getWorkDays } from '@/lib/utils';
+import { formatDate, getWorkDays , parseDateUTC } from '@/lib/utils';
 
 // GET /api/attendance/monitor - Attendance records for admin/HR with filtering
 export async function GET(request: NextRequest) {
@@ -30,14 +30,14 @@ export async function GET(request: NextRequest) {
 
     // Date filtering
     if (date) {
-      attendanceWhere.date = new Date(date);
+      attendanceWhere.date = parseDateUTC(date);
     } else if (startDate || endDate) {
       attendanceWhere.date = {};
       if (startDate) {
-        (attendanceWhere.date as Record<string, Date>).gte = new Date(startDate);
+        (attendanceWhere.date as Record<string, Date>).gte = parseDateUTC(startDate);
       }
       if (endDate) {
-        (attendanceWhere.date as Record<string, Date>).lte = new Date(endDate);
+        (attendanceWhere.date as Record<string, Date>).lte = parseDateUTC(endDate);
       }
     } else {
       // Default to today if no date specified
@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
 
     // Generate weekend AND holiday records for the date range
     if (startDate || endDate || date) {
-      const start = date ? new Date(date) : startDate ? new Date(startDate) : new Date(formatDate(new Date()));
-      const end = date ? new Date(date) : endDate ? new Date(endDate) : new Date(formatDate(new Date()));
+      const start = date ? parseDateUTC(date) : startDate ? parseDateUTC(startDate) : new Date(formatDate(new Date()));
+      const end = date ? parseDateUTC(date) : endDate ? parseDateUTC(endDate) : new Date(formatDate(new Date()));
       
       // Fetch holidays in range
       const holidays = await prisma.holiday.findMany({
