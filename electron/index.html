@@ -1066,10 +1066,8 @@
     // ─── Tray Actions ───
     ipcRenderer.on('quick-action',function(_,a){if(!token)return;switch(a){case'check-in':checkIn();break;case'check-out':checkOut();break;case'break-start':startBreak();break;case'break-end':endBreak();break}});
 
-    // Auto-refresh
-    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');fetchStatus();if(!isA)fetchMonthly();if(isA){fetchAllAttendance();fetchAdminData();}}},30000);
-    setInterval(function(){if(token){fetchNotifications();}},30000);
-    setInterval(function(){if(token){fetchAnnouncements();fetchHolidays()}},300000);
+    // Auto-refresh every 10 seconds - all data
+    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');fetchStatus();if(!isA)fetchMonthly();if(isA){fetchAllAttendance();fetchAdminData();}fetchNotifications();fetchAnnouncements();fetchHolidays();}},10000);
 
     // Enter key
     document.getElementById('password').addEventListener('keypress',function(e){if(e.key==='Enter')login()});
