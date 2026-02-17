@@ -23,7 +23,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
-    icon: path.join(__dirname, 'assets', 'iconbmd.png'),
+    icon: path.join(__dirname, 'assets', 'iconbmd.ico'),
   });
 
   mainWindow.loadFile('index.html');
@@ -44,7 +44,7 @@ function createWindow() {
 }
 
 function createTray() {
-  const iconPath = path.join(__dirname, 'assets', 'iconbmd.png');
+  const iconPath = path.join(__dirname, 'assets', 'iconbmd.ico');
   
   // Create a simple icon if file doesn't exist
   let icon;
