@@ -40,6 +40,11 @@
     .fg input{width:100%;padding:11px 14px;border:1.5px solid #334155;border-radius:8px;background:rgba(255,255,255,.04);color:#f1f5f9;font-size:13px;font-family:inherit;transition:all .2s}
     .fg input::placeholder{color:#475569}
     .fg input:focus{outline:none;border-color:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.12)}
+    .fg-pass{position:relative}
+    .fg-pass input{padding-right:42px}
+    .pass-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748b;padding:4px;display:flex;align-items:center;justify-content:center;transition:color .15s}
+    .pass-toggle:hover{color:#34d399}
+    .pass-toggle svg{width:18px;height:18px}
     .btn-login{width:100%;max-width:320px;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;background:linear-gradient(135deg,#34d399,#2dd4bf);color:#0f172a;transition:all .2s}
     .btn-login:hover{box-shadow:0 6px 20px rgba(52,211,153,.3);transform:translateY(-1px)}
     .btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
@@ -367,7 +372,13 @@
       </div>
       <div class="fg">
         <label>PASSWORD</label>
-        <input type="password" id="password" placeholder="Enter your password">
+        <div class="fg-pass">
+          <input type="password" id="password" placeholder="Enter your password">
+          <button type="button" class="pass-toggle" onclick="togglePassword()" tabindex="-1" title="Show password">
+            <svg id="eyeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            <svg id="eyeOffIcon" style="display:none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+          </button>
+        </div>
       </div>
       <div class="forgot-link"><a onclick="openForgotModal()">Forgot Password?</a></div>
       <button class="btn-login" onclick="login()" id="loginBtn">Sign In</button>
@@ -688,6 +699,15 @@
       var opts={method:method,headers:headers};
       if(body)opts.body=JSON.stringify(body);
       var res=await fetch(apiUrl+'/api'+ep,opts);return res.json();
+    }
+
+    // ─── Toggle Password Visibility ───
+    function togglePassword(){
+      var inp=document.getElementById('password');
+      var eyeOn=document.getElementById('eyeIcon');
+      var eyeOff=document.getElementById('eyeOffIcon');
+      if(inp.type==='password'){inp.type='text';eyeOn.style.display='none';eyeOff.style.display='block'}
+      else{inp.type='password';eyeOn.style.display='block';eyeOff.style.display='none'}
     }
 
     // ─── Login ───
