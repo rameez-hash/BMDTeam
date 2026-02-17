@@ -123,14 +123,15 @@ export default function AttendanceCalendar({
 
   // Generate full calendar with all dates
   const calendarRecords = useMemo(() => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     return allDates.map(date => {
       const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const existingRecord = recordsByDate.get(dateKey);
       const dayOfWeek = date.getDay();
       const isWeekendDay = !workDays.includes(dayOfWeek);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const isFuture = date > today;
+      const isFuture = dateKey > todayKey;
 
       if (existingRecord) return existingRecord;
 
@@ -143,8 +144,8 @@ export default function AttendanceCalendar({
       // Before joining date → NOT_JOINED instead of ABSENT
       if (employeeJoiningDate) {
         const joinDate = new Date(employeeJoiningDate);
-        joinDate.setHours(0, 0, 0, 0);
-        if (date < joinDate) {
+        const joinKey = `${joinDate.getFullYear()}-${String(joinDate.getMonth() + 1).padStart(2, '0')}-${String(joinDate.getDate()).padStart(2, '0')}`;
+        if (dateKey < joinKey) {
           return { id: `notjoined-${dateKey}`, date: date.toISOString(), status: 'NOT_JOINED', workHours: 0, isLate: false, breaks: [] } as AttendanceRecord;
         }
       }

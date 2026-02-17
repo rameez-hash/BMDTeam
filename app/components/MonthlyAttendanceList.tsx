@@ -92,7 +92,13 @@ export default function MonthlyAttendanceList() {
   // Map records by date
   const recMap = new Map<string, AttRecord>();
   records.forEach((r) => {
-    const d = typeof r.date === 'string' ? r.date.substring(0, 10) : new Date(r.date).toISOString().substring(0, 10);
+    let d: string;
+    if (typeof r.date === 'string') {
+      d = r.date.substring(0, 10);
+    } else {
+      const dt = new Date(r.date);
+      d = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    }
     recMap.set(d, r);
   });
 
