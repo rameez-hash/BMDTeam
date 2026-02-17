@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { parseDateUTC } from '@/lib/utils';
+import { parseDateUTC, formatDate } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
@@ -577,7 +577,7 @@ function generateCSV(reportType: string, data: Record<string, unknown>): string 
 // ═══════════ PDF HTML GENERATOR ═══════════
 function generateReportHTML(reportType: string, data: Record<string, unknown>, startDate: string | null, endDate: string | null): string {
   const formatCurrency = (amount: number) => 'Rs ' + Math.round(amount || 0).toLocaleString('en-PK');
-  const formatDate = (date: string | Date) => parseDateUTC(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const formatDate = (date: string | Date) => (date instanceof Date ? date : new Date(date)).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const d = data as Record<string, unknown>;
 
   let reportContent = '';
