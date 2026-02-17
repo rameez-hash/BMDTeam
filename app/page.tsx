@@ -167,10 +167,6 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
-          © {new Date().getFullYear()} BMD Digital. All rights reserved.
-        </p>
-
         {/* Desktop App Download */}
         <div className="mt-4 flex justify-center">
           <a
@@ -184,6 +180,10 @@ export default function LoginPage() {
             <span className="text-[10px] text-slate-400 font-normal">(Windows)</span>
           </a>
         </div>
+
+        <p className="text-center text-xs text-slate-400 mt-4">
+          © {new Date().getFullYear()} BMD Digital. All rights reserved.
+        </p>
       </div>
 
       {/* Forgot Password Modal */}
