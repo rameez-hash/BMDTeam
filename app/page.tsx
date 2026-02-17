@@ -167,23 +167,23 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Desktop App Download */}
-        <div className="mt-4 flex justify-center">
-          <a
-            href="/api/download/desktop"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[13px] font-medium text-slate-600 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Download Desktop App
-            <span className="text-[10px] text-slate-400 font-normal">(Windows)</span>
-          </a>
-        </div>
-
         <p className="text-center text-xs text-slate-400 mt-4">
           © {new Date().getFullYear()} BMD Digital. All rights reserved.
         </p>
+
+        {/* Desktop App Download */}
+        <div className="mt-2 flex justify-center">
+          <a
+            href="/api/download/desktop"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-slate-400 hover:text-emerald-600 transition-all"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Desktop App
+            <span className="text-[9px] text-slate-300 font-normal">(Windows)</span>
+          </a>
+        </div>
       </div>
 
       {/* Forgot Password Modal */}
