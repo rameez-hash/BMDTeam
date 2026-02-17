@@ -20,15 +20,25 @@
     "electron-store": "^8.1.0"
   },
   "build": {
-    "appId": "com.hrms.desktop",
-    "productName": "HRMS Desktop",
+    "appId": "com.bmddigital.hrms",
+    "productName": "BMD HRMS",
+    "copyright": "Copyright © 2026 BMD Digital",
     "directories": {
-      "output": "dist"
+      "output": "output"
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png",
-      "signAndEditExecutable": false
+      "icon": "assets/iconbmd.ico",
+      "signAndEditExecutable": false,
+      "publisherName": "BMD Digital"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "assets/iconbmd.ico",
+      "uninstallerIcon": "assets/iconbmd.ico",
+      "installerHeaderIcon": "assets/iconbmd.ico"
     },
     "mac": {
       "target": "dmg",

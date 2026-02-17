@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 // GitHub Release asset details for private repo download proxy
 const GITHUB_REPO = 'rameez-hash/BMDHRMS';
 const RELEASE_TAG = 'v1.0.0';
-const ASSET_NAME = 'HRMS.Desktop.Setup.1.0.0.exe';
+const ASSET_NAME = 'BMD.HRMS.Setup.1.0.0.exe';
 
 export async function GET() {
   try {

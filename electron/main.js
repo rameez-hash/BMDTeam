@@ -6,7 +6,8 @@ const store = new Store();
 let mainWindow;
 let tray;
 
-const API_URL = store.get('apiUrl') || 'https://hrms.bmdhouse.com';
+// Always use Vercel production URL
+const API_URL = 'https://hrms.bmdhouse.com';
 
 function createWindow() {
   mainWindow = new BrowserWindow({
