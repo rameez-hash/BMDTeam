@@ -1,17 +1,19 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { formatDate } from '@/lib/utils';
 import fs from 'fs';
 import path from 'path';
 
-// ─── PKR Currency Formatter ───
+// --- PKR Currency Formatter ---
 const formatPKR = (amount: number) => {
   if (!amount && amount !== 0) return 'Rs 0';
   return 'Rs ' + Math.round(amount).toLocaleString('en-PK');
 };
 
-// ─── Load logo as base64 ───
+// --- Load logo as base64 ---
 function getLogoBase64(): string {
   try {
     const logoPath = path.join(process.cwd(), 'public', 'logo-dark.webp');
@@ -22,7 +24,7 @@ function getLogoBase64(): string {
   }
 }
 
-// ─── Shared CSS for payslip (single source of truth) ───
+// --- Shared CSS for payslip (single source of truth) ---
 const payslipCSS = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -312,7 +314,7 @@ const payslipCSS = `
   }
 `;
 
-// ─── Generate single payslip HTML div ───
+// --- Generate single payslip HTML div ---
 function generatePayslipHTML(payroll: any, logoBase64: string) {
   const emp = payroll.employee;
   const monthNames = [
@@ -533,7 +535,7 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
   `;
 }
 
-// ─── Wrap payslip(s) in full HTML document ───
+// --- Wrap payslip(s) in full HTML document ---
 function wrapInDocument(title: string, payslipContent: string) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -559,7 +561,7 @@ function wrapInDocument(title: string, payslipContent: string) {
 </html>`;
 }
 
-// ─── Prisma employee select fields ───
+// --- Prisma employee select fields ---
 const employeeSelectFields = {
   id: true,
   employeeCode: true,
@@ -588,7 +590,7 @@ export async function GET(req: NextRequest) {
     const singleId = searchParams.get('id');
     const bulkIds = searchParams.get('ids');
 
-    // ── Bulk payslip download ──
+    // -- Bulk payslip download --
     if (bulkIds) {
       const ids = bulkIds.split(',').map(id => id.trim()).filter(Boolean);
       if (ids.length === 0) {
@@ -631,7 +633,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── Single payslip download ──
+    // -- Single payslip download --
     if (!singleId) {
       return NextResponse.json({ error: 'Payroll record ID is required' }, { status: 400 });
     }
