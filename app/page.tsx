@@ -167,23 +167,23 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-4">
-          © {new Date().getFullYear()} BMD Digital. All rights reserved.
-        </p>
-
         {/* Desktop App Download */}
-        <div className="mt-2 flex justify-center">
+        <div className="mt-3 flex justify-center">
           <a
             href="/api/download/desktop"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-slate-400 hover:text-emerald-600 transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
           >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Download Desktop App
-            <span className="text-[9px] text-slate-300 font-normal">(Windows)</span>
+            Desktop App
+            <span className="text-[9px] text-slate-400 font-normal">(Windows)</span>
           </a>
         </div>
+
+        <p className="text-center text-xs text-slate-400 mt-3">
+          © {new Date().getFullYear()} BMD Digital. All rights reserved.
+        </p>
       </div>
 
       {/* Forgot Password Modal */}
