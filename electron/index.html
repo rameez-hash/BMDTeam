@@ -931,10 +931,16 @@
     async function doAction(ep,m,msg){
       var el=document.getElementById('actMsg');
       try{var r=await apiCall(ep,m);
-        if(r.success){el.className='a-msg ok';el.textContent=r.message||msg;el.style.display='block';ipcRenderer.invoke('show-notification',{title:'HRMS',body:r.message||msg});fetchStatus()}
+        if(r.success){el.className='a-msg ok';el.textContent=r.message||msg;el.style.display='block';ipcRenderer.invoke('show-notification',{title:'HRMS',body:r.message||msg});refreshAfterAction()}
         else{el.className='a-msg fail';el.textContent=r.error||'Failed';el.style.display='block'}}
       catch(e){el.className='a-msg fail';el.textContent='Connection error';el.style.display='block'}
       setTimeout(function(){el.style.display='none'},3000);
+    }
+    function refreshAfterAction(){
+      var isAdmin=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');
+      fetchStatus();
+      if(!isAdmin){fetchMonthly();}
+      if(isAdmin){fetchAllAttendance();fetchAdminData();}
     }
 
     // ─── Monthly Stats ───
@@ -1061,8 +1067,8 @@
     ipcRenderer.on('quick-action',function(_,a){if(!token)return;switch(a){case'check-in':checkIn();break;case'check-out':checkOut();break;case'break-start':startBreak();break;case'break-end':endBreak();break}});
 
     // Auto-refresh
-    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');if(!isA)fetchStatus();}},60000);
-    setInterval(function(){if(token){fetchNotifications();var isAdmin=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');if(isAdmin)fetchAdminData();}},30000);
+    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');fetchStatus();if(!isA)fetchMonthly();if(isA){fetchAllAttendance();fetchAdminData();}}},30000);
+    setInterval(function(){if(token){fetchNotifications();}},30000);
     setInterval(function(){if(token){fetchAnnouncements();fetchHolidays()}},300000);
 
     // Enter key
