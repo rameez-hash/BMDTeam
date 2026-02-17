@@ -647,8 +647,8 @@ export default function AttendancePage() {
     }
     setEditingRecord(record);
     setEditForm({
-      checkIn: record.checkIn ? new Date(record.checkIn).toISOString().slice(0, 16) : '',
-      checkOut: record.checkOut ? new Date(record.checkOut).toISOString().slice(0, 16) : '',
+      checkIn: record.checkIn ? toLocalDatetimeStr(record.checkIn) : '',
+      checkOut: record.checkOut ? toLocalDatetimeStr(record.checkOut) : '',
       status: record.status || 'PRESENT',
       isLate: record.isLate || false,
       lateMinutes: 0,
@@ -669,8 +669,8 @@ export default function AttendancePage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           id: editingRecord.id,
-          checkIn: editForm.checkIn || null,
-          checkOut: editForm.checkOut || null,
+          checkIn: editForm.checkIn ? new Date(editForm.checkIn).toISOString() : null,
+          checkOut: editForm.checkOut ? new Date(editForm.checkOut).toISOString() : null,
           status: editForm.status,
           isLate: editForm.isLate,
           lateMinutes: editForm.lateMinutes,
@@ -755,8 +755,8 @@ export default function AttendancePage() {
         body: JSON.stringify({
           employeeId: addForm.employeeId,
           date: addForm.date,
-          checkIn: addForm.checkIn || null,
-          checkOut: addForm.checkOut || null,
+          checkIn: addForm.checkIn ? new Date(addForm.checkIn).toISOString() : null,
+          checkOut: addForm.checkOut ? new Date(addForm.checkOut).toISOString() : null,
           status: addForm.status,
           isLate: addForm.isLate,
           workLocation: addForm.workLocation,
@@ -839,6 +839,17 @@ export default function AttendancePage() {
     };
     const labels: Record<string, string> = { WEEKEND: 'Weekend Off', HOLIDAY: 'Holiday', NOT_JOINED: 'Not Joined' };
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status.replace('_', ' ')}</Badge>;
+  };
+
+  // Convert a UTC date string to local "YYYY-MM-DDTHH:MM" for datetime-local inputs
+  const toLocalDatetimeStr = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${day}T${h}:${min}`;
   };
 
   const formatTimeStr = (dateString?: string) => {
