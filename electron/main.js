@@ -6,7 +6,7 @@ const store = new Store();
 let mainWindow;
 let tray;
 
-const API_URL = store.get('apiUrl') || 'http://localhost:3000';
+const API_URL = store.get('apiUrl') || 'https://hrms.bmdhouse.com';
 
 function createWindow() {
   mainWindow = new BrowserWindow({

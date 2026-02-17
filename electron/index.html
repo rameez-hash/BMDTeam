@@ -842,11 +842,11 @@
       else if(empAttFilter==='late')filtered=allEmpAttData.filter(function(r){return r.isLate});
       else if(empAttFilter==='leave')filtered=allEmpAttData.filter(function(r){return r.status==='ON_LEAVE'});
       if(!filtered.length){el.innerHTML='<div class="empty">No records</div>';return}
-      filtered.sort(function(a,b){return new Date(b.date)-new Date(a.date)});
+      filtered.sort(function(a,b){return b.date.localeCompare(a.date)});
       var showName=!eaSelectedEmp;
       var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       el.innerHTML=filtered.map(function(r){
-        var dt=new Date(r.date);
+        var dt=new Date(r.date+'T00:00:00');
         var dd=dt.getDate();
         var dn=days[dt.getDay()];
         var stClass='st-absent',stLabel='Absent';
