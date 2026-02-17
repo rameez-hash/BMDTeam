@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
-import { formatDate } from '@/lib/utils';
+import { formatDate, parseDateUTC } from '@/lib/utils';
 
 // GET /api/holidays - List holidays
 export async function GET(request: NextRequest) {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const holidayDate = new Date(date);
+    const holidayDate = parseDateUTC(date);
     const holiday = await prisma.holiday.create({
       data: {
         name,
@@ -144,7 +144,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Holiday not found' }, { status: 404 });
     }
 
-    const nextDate = date ? new Date(date) : existing.date;
+    const nextDate = date ? parseDateUTC(date) : existing.date;
     const dateChanged = date ? formatDate(existing.date) !== formatDate(nextDate) : false;
 
     const holiday = await prisma.holiday.update({

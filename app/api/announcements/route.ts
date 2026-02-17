@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { getPaginationParams } from '@/lib/utils';
+import { getPaginationParams, parseDateUTC } from '@/lib/utils';
 import { checkPermission } from '@/lib/permissions';
 
 // GET /api/announcements - List announcements
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
         content,
         type: type || 'GENERAL',
         priority: priority || 'NORMAL',
-        publishDate: new Date(publishDate),
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        publishDate: parseDateUTC(publishDate),
+        expiryDate: expiryDate ? parseDateUTC(expiryDate) : null,
         createdById: user!.userId,
       },
     });

@@ -81,11 +81,14 @@ export default function PromotionsPage() {
   const [filterType, setFilterType] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Helper: local today date string
+  const getLocalToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+
   // Form state
   const [form, setForm] = useState({
     employeeId: '',
     type: 'PROMOTION',
-    effectiveDate: new Date().toISOString().slice(0, 10),
+    effectiveDate: getLocalToday(),
     newDesignation: '',
     newDepartmentId: '',
     newBasicSalary: '',
@@ -194,7 +197,7 @@ export default function PromotionsPage() {
         const data = await res.json();
         toast.success(data.message || 'Record created successfully');
         setView('list');
-        setForm({ employeeId: '', type: 'PROMOTION', effectiveDate: new Date().toISOString().slice(0, 10), newDesignation: '', newDepartmentId: '', newBasicSalary: '', reason: '', remarks: '' });
+        setForm({ employeeId: '', type: 'PROMOTION', effectiveDate: getLocalToday(), newDesignation: '', newDepartmentId: '', newBasicSalary: '', reason: '', remarks: '' });
         fetchRecords();
         fetchEmployees(); // refresh employee data
       } else {

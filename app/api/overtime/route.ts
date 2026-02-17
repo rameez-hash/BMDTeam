@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
 import { notify } from '@/lib/notifications';
+import { parseDateUTC } from '@/lib/utils';
 
 // GET /api/overtime - Get overtime records & rules
 export async function GET(request: NextRequest) {
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
       const record = await prisma.overtimeRecord.create({
         data: {
           employeeId,
-          date: new Date(date),
+          date: parseDateUTC(date),
           overtimeHours: parseFloat(overtimeHours),
           overtimeType: overtimeType || 'REGULAR',
           rateMultiplier,

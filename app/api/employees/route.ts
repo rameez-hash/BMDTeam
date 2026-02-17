@@ -254,11 +254,13 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await hashPassword(password);
 
-    // Helper function to safely parse dates
+    // Helper function to safely parse dates (date-only → UTC midnight)
     const parseDate = (dateValue: unknown): Date | null => {
       if (!dateValue || dateValue === '') return null;
       if (typeof dateValue === 'string' && dateValue.trim() !== '') {
-        const parsed = new Date(dateValue);
+        const str = dateValue.trim();
+        // Append T00:00:00Z if it's a date-only string to ensure UTC
+        const parsed = new Date(str.includes('T') ? str : str + 'T00:00:00Z');
         if (!isNaN(parsed.getTime())) return parsed;
       }
       return null;

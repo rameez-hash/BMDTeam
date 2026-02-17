@@ -2,6 +2,7 @@
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
+import { parseDateUTC } from '@/lib/utils';
 
 // GET /api/onboarding - Get onboarding records & templates
 export async function GET(request: NextRequest) {
@@ -187,7 +188,7 @@ export async function POST(request: NextRequest) {
         data: {
           employeeId,
           templateId: templateId || null,
-          dueDate: dueDate ? new Date(dueDate) : null,
+          dueDate: dueDate ? parseDateUTC(dueDate) : null,
           assignedById: user!.userId,
           notes: notes || null,
           status: 'IN_PROGRESS',

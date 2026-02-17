@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { getPaginationParams } from '@/lib/utils';
+import { getPaginationParams, parseDateUTC } from '@/lib/utils';
 import { checkPermission } from '@/lib/permissions';
 import { notifyMany, getUsersWithPermission } from '@/lib/notifications';
 
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       where: {
         employeeId_date: {
           employeeId: employee.id,
-          date: new Date(date),
+          date: parseDateUTC(date),
         },
       },
     });
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     const existingRequest = await prisma.attendanceCorrection.findFirst({
       where: {
         employeeId: employee.id,
-        date: new Date(date),
+        date: parseDateUTC(date),
         status: 'PENDING',
       },
     });
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const correction = await prisma.attendanceCorrection.create({
       data: {
         employeeId: employee.id,
-        date: new Date(date),
+        date: parseDateUTC(date),
         originalCheckIn: originalAttendance?.checkIn,
         originalCheckOut: originalAttendance?.checkOut,
         requestedCheckIn: requestedCheckIn ? new Date(requestedCheckIn) : null,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { getPaginationParams, calculateLeaveDays } from '@/lib/utils';
+import { getPaginationParams, calculateLeaveDays, parseDateUTC } from '@/lib/utils';
 import { checkPermission } from '@/lib/permissions';
 import { notifyMany, getUsersWithPermission } from '@/lib/notifications';
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     // Use employee's shift work days for accurate calculation
     const empWorkDays = (employee as { shift?: { workDays?: number[] } }).shift?.workDays || [1,2,3,4,5];
-    const totalDays = calculateLeaveDays(new Date(startDate), new Date(endDate), true, empWorkDays);
+    const totalDays = calculateLeaveDays(parseDateUTC(startDate), parseDateUTC(endDate), true, empWorkDays);
     // Block leave on off-days/weekends
     if (totalDays === 0) {
       return NextResponse.json(
@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
       data: {
         employeeId: employee.id,
         leaveTypeId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseDateUTC(startDate),
+        endDate: parseDateUTC(endDate),
         totalDays,
         reason,
       },

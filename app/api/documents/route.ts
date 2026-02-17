@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
+import { parseDateUTC } from '@/lib/utils';
 
 // GET /api/documents - Get all employee documents
 export async function GET(request: NextRequest) {
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
         fileType: fileType || 'PDF',
         uploadedBy: user!.userId,
         description,
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        expiryDate: expiryDate ? parseDateUTC(expiryDate) : null,
         visibility: visibility || 'ALL',
         isApproved: managePerm.allowed,
         approvedBy: managePerm.allowed ? user!.userId : null,

@@ -366,7 +366,7 @@ export default function LeavePage() {
             </div>
           </div>
           {user?.employee && user?.role !== 'ADMIN' && (
-            <Button variant="ghost" onClick={() => { const today = new Date().toISOString().split('T')[0]; setReqForm({ leaveTypeId: '', startDate: today, endDate: today, reason: '' }); setShowRequestForm(true); }} className="!bg-white !text-teal-700 hover:!bg-teal-50 border-0 shadow-md font-semibold">
+            <Button variant="ghost" onClick={() => { const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; setReqForm({ leaveTypeId: '', startDate: today, endDate: today, reason: '' }); setShowRequestForm(true); }} className="!bg-white !text-teal-700 hover:!bg-teal-50 border-0 shadow-md font-semibold">
               + New Request
             </Button>
           )}

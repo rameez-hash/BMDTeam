@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
-import { getPaginationParams, formatDate, calculateLateArrival, calculateWorkHours, getWorkDays } from '@/lib/utils';
+import { getPaginationParams, formatDate, calculateLateArrival, calculateWorkHours, getWorkDays, parseDateUTC } from '@/lib/utils';
 import { checkPermission } from '@/lib/permissions';
 
 // GET /api/attendance - List attendance records
@@ -23,13 +23,13 @@ export async function GET(request: NextRequest) {
     
     if (startDate && endDate) {
       where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: parseDateUTC(startDate),
+        lte: parseDateUTC(endDate),
       };
     } else if (startDate) {
-      where.date = { gte: new Date(startDate) };
+      where.date = { gte: parseDateUTC(startDate) };
     } else if (endDate) {
-      where.date = { lte: new Date(endDate) };
+      where.date = { lte: parseDateUTC(endDate) };
     }
 
     if (status) where.status = status;
@@ -542,7 +542,7 @@ export async function POST(request: NextRequest) {
       where: {
         employeeId_date: {
           employeeId,
-          date: new Date(date),
+          date: parseDateUTC(date),
         },
       },
     });
@@ -563,7 +563,7 @@ export async function POST(request: NextRequest) {
     let computedIsLate = false;
     let computedLateMinutes = 0;
     if (checkIn && employee.shift && isLate === undefined) {
-      const dateStr = formatDate(new Date(date));
+      const dateStr = formatDate(parseDateUTC(date));
       const lateInfo = calculateLateArrival(
         new Date(checkIn), employee.shift.startTime, employee.shift.endTime, employee.shift.graceTime, dateStr
       );
@@ -587,7 +587,7 @@ export async function POST(request: NextRequest) {
     const attendance = await prisma.attendance.create({
       data: {
         employeeId,
-        date: new Date(date),
+        date: parseDateUTC(date),
         checkIn: noTimeStatus ? null : (checkIn ? new Date(checkIn) : null),
         checkOut: noTimeStatus ? null : (checkOut ? new Date(checkOut) : null),
         status: status || 'PRESENT',

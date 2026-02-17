@@ -1,5 +1,16 @@
 import { format, parseISO, differenceInMinutes, differenceInHours, startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
 
+/**
+ * Parse a date-only string (YYYY-MM-DD) as UTC midnight.
+ * `new Date("2026-02-16")` already gives UTC midnight in most engines,
+ * but appending T00:00:00Z makes it explicit and safe everywhere.
+ */
+export function parseDateUTC(dateStr: string): Date {
+  // Already a full ISO string (contains T) → parse as-is
+  if (dateStr.includes('T')) return new Date(dateStr);
+  return new Date(dateStr + 'T00:00:00Z');
+}
+
 export function formatDate(date: Date | string, formatStr: string = 'yyyy-MM-dd'): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
   return format(d, formatStr);

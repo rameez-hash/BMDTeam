@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
 import { notify } from '@/lib/notifications';
+import { parseDateUTC } from '@/lib/utils';
 
 // GET - List all promotions/increments/transfers
 export async function GET(request: NextRequest) {
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     const historyData: any = {
       employeeId,
       type,
-      effectiveDate: new Date(effectiveDate),
+      effectiveDate: parseDateUTC(effectiveDate),
       reason: reason || null,
       remarks: remarks || null,
       approvedById: auth!.userId,
@@ -217,7 +218,7 @@ export async function POST(request: NextRequest) {
               grossSalary: currentSalary.grossSalary,
               netSalary: currentSalary.netSalary,
               effectiveFrom: currentSalary.effectiveFrom,
-              effectiveTo: new Date(effectiveDate),
+              effectiveTo: parseDateUTC(effectiveDate),
               reason: `${type}: ${reason || 'Salary revision'}`,
             },
           });
@@ -233,7 +234,7 @@ export async function POST(request: NextRequest) {
               basicSalary: newBasicSalary,
               grossSalary: gross,
               netSalary: net,
-              effectiveFrom: new Date(effectiveDate),
+              effectiveFrom: parseDateUTC(effectiveDate),
             },
           });
         } else {
@@ -245,7 +246,7 @@ export async function POST(request: NextRequest) {
               basicSalary: newBasicSalary,
               grossSalary: gross,
               netSalary: gross,
-              effectiveFrom: new Date(effectiveDate),
+              effectiveFrom: parseDateUTC(effectiveDate),
             },
           });
         }
