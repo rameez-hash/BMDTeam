@@ -168,16 +168,26 @@ export default function LoginPage() {
         </div>
 
         {/* Desktop App Download */}
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex justify-center gap-2">
           <a
-            href="/api/download/desktop"
+            href="/api/download/desktop?platform=win"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Desktop App
-            <span className="text-[9px] text-slate-400 font-normal">(Windows)</span>
+            Windows
+            <span className="text-[9px] text-slate-400 font-normal">(.exe)</span>
+          </a>
+          <a
+            href="/api/download/desktop?platform=mac"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            macOS
+            <span className="text-[9px] text-slate-400 font-normal">(.dmg)</span>
           </a>
         </div>
 

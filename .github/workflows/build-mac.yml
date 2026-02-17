@@ -1,0 +1,127 @@
+name: Build macOS Desktop App
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'electron/**'
+    branches:
+      - master
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: electron
+        run: npm install
+
+      - name: Create macOS icon
+        working-directory: electron
+        run: |
+          # Install iconutil dependencies
+          npm install sharp --save-dev
+          
+          # Generate iconset from PNG
+          node -e "
+          const sharp = require('sharp');
+          const fs = require('fs');
+          const path = require('path');
+          
+          async function makeIconset() {
+            const src = path.join(__dirname, 'assets', 'iconbmd.png');
+            const iconsetDir = path.join(__dirname, 'assets', 'iconbmd.iconset');
+            fs.mkdirSync(iconsetDir, { recursive: true });
+            
+            const sizes = [16, 32, 64, 128, 256, 512];
+            for (const size of sizes) {
+              await sharp(src)
+                .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                .png()
+                .toFile(path.join(iconsetDir, 'icon_' + size + 'x' + size + '.png'));
+              
+              // @2x versions
+              const size2x = size * 2;
+              if (size2x <= 1024) {
+                await sharp(src)
+                  .resize(size2x, size2x, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                  .png()
+                  .toFile(path.join(iconsetDir, 'icon_' + size + 'x' + size + '@2x.png'));
+              }
+            }
+            console.log('Iconset created');
+          }
+          makeIconset();
+          "
+          
+          # Convert iconset to icns using macOS native tool
+          iconutil -c icns assets/iconbmd.iconset -o assets/iconbmd.icns
+          rm -rf assets/iconbmd.iconset
+          echo "Created iconbmd.icns"
+          ls -la assets/iconbmd.icns
+
+      - name: Build macOS DMG
+        working-directory: electron
+        run: |
+          npx electron-builder --mac --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: List output
+        working-directory: electron
+        run: ls -la output/*.dmg || ls -la output/
+
+      - name: Upload to GitHub Release
+        working-directory: electron
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find the DMG file
+          DMG_FILE=$(ls output/*.dmg | head -1)
+          DMG_NAME=$(basename "$DMG_FILE")
+          echo "Uploading $DMG_NAME"
+          
+          # Get release ID for v1.0.0
+          RELEASE_ID=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/v1.0.0" | \
+            jq -r '.id')
+          
+          if [ "$RELEASE_ID" = "null" ] || [ -z "$RELEASE_ID" ]; then
+            echo "Release v1.0.0 not found, creating..."
+            RELEASE_ID=$(curl -s -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases" \
+              -d '{"tag_name":"v1.0.0","name":"BMD HRMS Desktop v1.0.0","body":"Desktop app for attendance tracking"}' | \
+              jq -r '.id')
+          fi
+          
+          echo "Release ID: $RELEASE_ID"
+          
+          # Delete existing mac asset if any
+          EXISTING=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets" | \
+            jq -r '.[] | select(.name | endswith(".dmg")) | .id')
+          
+          if [ -n "$EXISTING" ]; then
+            echo "Deleting existing DMG asset: $EXISTING"
+            curl -s -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/assets/$EXISTING"
+          fi
+          
+          # Upload new DMG
+          curl -s -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$DMG_FILE" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=BMD.HRMS-1.0.0.dmg" | \
+            jq '{name: .name, size: .size, state: .state}'
+          
+          echo "Upload complete!"

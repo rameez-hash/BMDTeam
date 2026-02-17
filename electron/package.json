@@ -53,7 +53,8 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "assets/icon.icns"
+      "icon": "assets/iconbmd.icns",
+      "category": "public.app-category.business"
     },
     "linux": {
       "target": "AppImage",

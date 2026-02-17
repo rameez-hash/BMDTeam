@@ -1,14 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 // GitHub Release asset details for private repo download proxy
 const GITHUB_REPO = 'rameez-hash/BMDHRMS';
 const RELEASE_TAG = 'v1.0.0';
-const ASSET_NAME = 'BMD.HRMS.Setup.1.0.0.exe';
 
-export async function GET() {
+const ASSETS: Record<string, string> = {
+  win: 'BMD.HRMS.Setup.1.0.0.exe',
+  mac: 'BMD.HRMS-1.0.0.dmg',
+};
+
+export async function GET(request: NextRequest) {
   try {
+    const platform = request.nextUrl.searchParams.get('platform') || 'win';
+    const ASSET_NAME = ASSETS[platform] || ASSETS.win;
+
     const githubToken = process.env.GITHUB_TOKEN;
     if (!githubToken) {
       return NextResponse.json({ error: 'Download not configured' }, { status: 503 });
@@ -33,7 +40,7 @@ export async function GET() {
     const asset = release.assets?.find((a: { name: string }) => a.name === ASSET_NAME);
 
     if (!asset) {
-      return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Asset not found. macOS build may still be in progress.' }, { status: 404 });
     }
 
     // Request the asset with octet-stream accept header → GitHub returns 302 redirect to a temporary public S3 URL
