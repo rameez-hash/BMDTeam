@@ -26,6 +26,16 @@
     "directories": {
       "output": "output"
     },
+    "extraResources": [
+      {
+        "from": "assets/iconbmd.ico",
+        "to": "iconbmd.ico"
+      },
+      {
+        "from": "assets/iconbmd.png",
+        "to": "iconbmd.png"
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "assets/iconbmd.ico",

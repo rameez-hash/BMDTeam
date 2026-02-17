@@ -9,6 +9,14 @@ let tray;
 // Always use Vercel production URL
 const API_URL = 'https://hrms.bmdhouse.com';
 
+// Icon path: use resourcesPath in packaged app, __dirname in dev
+function getIconPath(filename) {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, filename);
+  }
+  return path.join(__dirname, 'assets', filename);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 620,
@@ -23,7 +31,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
-    icon: path.join(__dirname, 'assets', 'iconbmd.ico'),
+    icon: getIconPath('iconbmd.ico'),
   });
 
   mainWindow.loadFile('index.html');
@@ -44,7 +52,7 @@ function createWindow() {
 }
 
 function createTray() {
-  const iconPath = path.join(__dirname, 'assets', 'iconbmd.ico');
+  const iconPath = getIconPath('iconbmd.ico');
   
   // Create a simple icon if file doesn't exist
   let icon;
