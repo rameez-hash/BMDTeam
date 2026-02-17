@@ -391,9 +391,13 @@ export async function PUT(
         });
       }
 
-      // Update user role if admin/HR and role is provided
-      if (canEditOthers && role) {
-        const userUpdateData: Record<string, unknown> = { role };
+      // Update user record (role, password, email sync)
+      if (canEditOthers) {
+        const userUpdateData: Record<string, unknown> = {};
+        
+        if (role) {
+          userUpdateData.role = role;
+        }
         
         // Update password if provided
         if (password) {
@@ -401,10 +405,17 @@ export async function PUT(
           userUpdateData.password = await hashPassword(password);
         }
 
-        await tx.user.update({
-          where: { id: existingEmployee.userId },
-          data: userUpdateData,
-        });
+        // Sync email to User model so login works with updated email
+        if (body.email && body.email !== existingEmployee.email) {
+          userUpdateData.email = body.email;
+        }
+
+        if (Object.keys(userUpdateData).length > 0) {
+          await tx.user.update({
+            where: { id: existingEmployee.userId },
+            data: userUpdateData,
+          });
+        }
       }
 
       // Update or create salary if admin/HR
