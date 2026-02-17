@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win",
+    "build:win": "electron-builder --win && node -e \"require('rcedit').rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico'})\" && npx electron-builder --win nsis --prepackaged output/win-unpacked",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
@@ -14,7 +14,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "rcedit": "^5.0.2"
   },
   "dependencies": {
     "electron-store": "^8.1.0"
