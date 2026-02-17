@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, parseDateUTC } from '@/lib/utils';
 import type { Attendance, Department, Employee, ActivityLog, User, Holiday } from '@prisma/client';
 
 // GET /api/dashboard/admin - Admin/HR/Manager dashboard
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     // Today's attendance stats
     const todayAttendance = await prisma.attendance.findMany({
-      where: { date: new Date(todayDate), ...attendanceFilter },
+      where: { date: parseDateUTC(todayDate), ...attendanceFilter },
     });
 
     const presentToday = todayAttendance.filter((a: Attendance) => ['PRESENT', 'HALF_DAY'].includes(a.status)).length;
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         const employeeIds = dept.employees.map((e: { id: string }) => e.id);
         const presentCount = await prisma.attendance.count({
           where: {
-            date: new Date(todayDate),
+            date: parseDateUTC(todayDate),
             employeeId: { in: employeeIds },
             status: { in: ['PRESENT', 'HALF_DAY'] },
           },

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { formatDate, getAttendanceDate, calculateLateArrival, isOffDay, getWorkDays } from '@/lib/utils';
+import { formatDate, getAttendanceDate, calculateLateArrival, isOffDay, getWorkDays, parseDateUTC } from '@/lib/utils';
 
 // POST /api/attendance/check-in
 export async function POST(request: NextRequest) {
@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     
     {
-      const attendanceDateObj = new Date(attendanceDate + 'T00:00:00');
-      const dayOfWeek = attendanceDateObj.getDay();
+      const attendanceDateObj = parseDateUTC(attendanceDate);
+      const dayOfWeek = attendanceDateObj.getUTCDay();
       if (isOffDay(dayOfWeek, workDays)) {
         return NextResponse.json(
           { error: `Cannot check in. ${dayNames[dayOfWeek]} (${attendanceDate}) is your off day.` },
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       where: {
         employeeId_date: {
           employeeId: employee.id,
-          date: new Date(attendanceDate),
+          date: parseDateUTC(attendanceDate),
         },
       },
     });
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
         attendanceDate = todayDate;
 
         // Re-check off day for the new date
-        const newDateObj = new Date(attendanceDate + 'T00:00:00');
-        const newDayOfWeek = newDateObj.getDay();
+        const newDateObj = parseDateUTC(attendanceDate);
+        const newDayOfWeek = newDateObj.getUTCDay();
         if (isOffDay(newDayOfWeek, workDays)) {
           return NextResponse.json(
             { error: `Cannot check in. ${dayNames[newDayOfWeek]} (${attendanceDate}) is your off day.` },
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           where: {
             employeeId_date: {
               employeeId: employee.id,
-              date: new Date(attendanceDate),
+              date: parseDateUTC(attendanceDate),
             },
           },
         });
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
       : await prisma.attendance.create({
           data: {
             employeeId: employee.id,
-            date: new Date(attendanceDate),
+            date: parseDateUTC(attendanceDate),
             checkIn: now,
             status: 'PRESENT',
             isLate,

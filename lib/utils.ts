@@ -1,15 +1,15 @@
 import { format, parseISO, differenceInMinutes, differenceInHours, startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
 
 /**
- * Parse a date-only string (YYYY-MM-DD) as local midnight (Pakistan time).
- * Server TZ is set to Asia/Karachi, so T00:00:00 = midnight PKT.
+ * Parse a date-only string (YYYY-MM-DD) as UTC midnight.
+ * All date-only fields are stored at UTC midnight for consistency.
  * Full ISO strings (with T) are parsed as-is.
  */
 export function parseDateUTC(dateStr: string): Date {
   // Already a full ISO string (contains T) → parse as-is
   if (dateStr.includes('T')) return new Date(dateStr);
-  // Date-only → local midnight (PKT since TZ=Asia/Karachi)
-  return new Date(dateStr + 'T00:00:00');
+  // Date-only → UTC midnight (same as new Date("YYYY-MM-DD"))
+  return new Date(dateStr + 'T00:00:00Z');
 }
 
 export function formatDate(date: Date | string, formatStr: string = 'yyyy-MM-dd'): string {

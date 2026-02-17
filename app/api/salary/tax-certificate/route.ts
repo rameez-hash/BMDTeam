@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
+import { parseDateUTC } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,8 +31,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch all salaries for the employee in the financial year
-    const startDate = new Date(`${financialYear}-04-01`);
-    const endDate = new Date(`${parseInt(financialYear) + 1}-03-31`);
+    const startDate = parseDateUTC(`${financialYear}-04-01`);
+    const endDate = parseDateUTC(`${parseInt(financialYear) + 1}-03-31`);
 
     const salaries = await prisma.salary.findMany({
       where: {

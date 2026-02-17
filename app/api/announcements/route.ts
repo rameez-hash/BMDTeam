@@ -163,8 +163,8 @@ export async function PUT(request: NextRequest) {
         ...(content && { content }),
         ...(type && { type }),
         ...(priority && { priority }),
-        ...(publishDate && { publishDate: new Date(publishDate) }),
-        ...(expiryDate !== undefined && { expiryDate: expiryDate ? new Date(expiryDate) : null }),
+        ...(publishDate && { publishDate: parseDateUTC(publishDate) }),
+        ...(expiryDate !== undefined && { expiryDate: expiryDate ? parseDateUTC(expiryDate) : null }),
         ...(isActive !== undefined && { isActive }),
       },
     });

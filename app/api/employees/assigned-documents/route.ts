@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         filePath,
         fileType: fileType || 'application/pdf',
         assignedBy: user!.employeeDbId || user!.userId,
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        expiryDate: expiryDate ? new Date(expiryDate + 'T00:00:00Z') : null,
         assignedAt: new Date(),
       },
     });

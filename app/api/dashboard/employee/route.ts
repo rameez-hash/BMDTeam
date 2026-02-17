@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
-import { formatDate, calculateTotalBreakMinutes } from '@/lib/utils';
+import { formatDate, calculateTotalBreakMinutes, parseDateUTC } from '@/lib/utils';
 
 // GET /api/dashboard/employee - Employee dashboard
 export async function GET(request: NextRequest) {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       where: {
         employeeId_date: {
           employeeId: employee.id,
-          date: new Date(todayDate),
+          date: parseDateUTC(todayDate),
         },
       },
       include: { breaks: true },
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const recentAttendance = await prisma.attendance.findMany({
       where: {
         employeeId: employee.id,
-        date: { gte: sevenDaysAgo, lte: new Date(todayDate) },
+        date: { gte: sevenDaysAgo, lte: parseDateUTC(todayDate) },
       },
       orderBy: { date: 'desc' },
       take: 7,

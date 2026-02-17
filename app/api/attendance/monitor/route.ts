@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       }
     } else {
       // Default to today if no date specified
-      attendanceWhere.date = new Date(formatDate(new Date()));
+      attendanceWhere.date = parseDateUTC(formatDate(new Date()));
     }
 
     // Employee filtering
@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
 
     // Generate weekend AND holiday records for the date range
     if (startDate || endDate || date) {
-      const start = date ? parseDateUTC(date) : startDate ? parseDateUTC(startDate) : new Date(formatDate(new Date()));
-      const end = date ? parseDateUTC(date) : endDate ? parseDateUTC(endDate) : new Date(formatDate(new Date()));
+      const start = date ? parseDateUTC(date) : startDate ? parseDateUTC(startDate) : parseDateUTC(formatDate(new Date()));
+      const end = date ? parseDateUTC(date) : endDate ? parseDateUTC(endDate) : parseDateUTC(formatDate(new Date()));
       
       // Fetch holidays in range
       const holidays = await prisma.holiday.findMany({

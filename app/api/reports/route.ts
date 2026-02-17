@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const dateFilter = {
       ...(startDate && { gte: parseDateUTC(startDate) }),
-      ...(endDate && { lte: new Date(endDate + 'T23:59:59') }),
+      ...(endDate && { lte: new Date(endDate + 'T23:59:59Z') }),
     };
 
     const employeeFilter: Record<string, unknown> = {

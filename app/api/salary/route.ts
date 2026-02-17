@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { calculateGrossSalary, calculateTotalDeductions, calculateNetSalary, calculateTax, getPaginationParams } from '@/lib/utils';
+import { calculateGrossSalary, calculateTotalDeductions, calculateNetSalary, calculateTax, getPaginationParams, parseDateUTC } from '@/lib/utils';
 
 // GET /api/salary - List salaries
 export async function GET(request: NextRequest) {
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
           grossSalary: existingSalary.grossSalary,
           netSalary: existingSalary.netSalary,
           effectiveFrom: existingSalary.effectiveFrom,
-          effectiveTo: new Date(effectiveFrom),
+          effectiveTo: parseDateUTC(effectiveFrom),
           reason: body.reason || 'Salary revision',
         },
       });
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
           otherDeductions,
           grossSalary,
           netSalary,
-          effectiveFrom: new Date(effectiveFrom),
+          effectiveFrom: parseDateUTC(effectiveFrom),
         },
         include: {
           employee: {
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
           otherDeductions,
           grossSalary,
           netSalary,
-          effectiveFrom: new Date(effectiveFrom),
+          effectiveFrom: parseDateUTC(effectiveFrom),
         },
         include: {
           employee: {

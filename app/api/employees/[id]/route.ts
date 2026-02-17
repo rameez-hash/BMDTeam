@@ -6,6 +6,7 @@ import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
 import { notify } from '@/lib/notifications';
+import { parseDateUTC } from '@/lib/utils';
 
 // GET /api/employees/[id] - Get employee details
 export async function GET(
@@ -190,7 +191,7 @@ export async function PUT(
     if (probMonths) {
       employeeData.probationMonths = probMonths;
       if (employeeData.joiningDate) {
-        const jd = new Date(employeeData.joiningDate);
+        const jd = parseDateUTC(employeeData.joiningDate);
         employeeData.probationEndDate = new Date(new Date(jd).setMonth(jd.getMonth() + probMonths));
       }
     } else {
@@ -255,7 +256,7 @@ export async function PUT(
       if (dateValue === undefined) return undefined; // Don't update if not provided
       if (dateValue === null || dateValue === '') return null; // Clear the field
       if (typeof dateValue === 'string' && dateValue.trim() !== '') {
-        const parsed = new Date(dateValue);
+        const parsed = parseDateUTC(dateValue);
         if (!isNaN(parsed.getTime())) return parsed;
       }
       return undefined; // Invalid date, don't update
