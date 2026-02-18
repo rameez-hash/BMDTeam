@@ -2,9 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticate } from '@/lib/middleware';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
+import { put } from '@vercel/blob';
 
 // Allowed file types by category
 const FILE_TYPE_CONFIGS: Record<string, { types: string[]; maxSize: number; label: string }> = {
@@ -79,30 +77,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', type);
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Generate unique filename (preserve original name for documents)
+    // Generate unique filename
     const ext = file.name.split('.').pop() || 'bin';
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_{2,}/g, '_');
-    const filename = `${user!.userId}_${Date.now()}_${safeName}`;
-    const filepath = path.join(uploadsDir, filename);
+    const filename = `${type}/${user!.userId}_${Date.now()}_${safeName}`;
 
-    // Write file to disk
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
-
-    // Return the public URL
-    const publicUrl = `/uploads/${type}/${filename}`;
+    // Upload to Vercel Blob Storage
+    const blob = await put(filename, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
     return NextResponse.json({
       success: true,
       data: {
-        url: publicUrl,
+        url: blob.url,
         filename: file.name,
         size: file.size,
         type: file.type,

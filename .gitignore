@@ -55,3 +55,6 @@ electron/node_modules/
 electron/dist/
 electron/output/
 electron/release/
+
+.env*.local
+.vercel
