@@ -52,7 +52,7 @@ export default function DocumentsPage() {
 }
 
 function DocumentsPageContent() {
-  const { user, token } = useAuth();
+  const { user, token, hasPermission } = useAuth();
   const toast = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
