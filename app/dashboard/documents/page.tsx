@@ -71,6 +71,7 @@ function DocumentsPageContent() {
   const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
+  const canManage = hasPermission('documents', 'manage');
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -191,12 +192,14 @@ function DocumentsPageContent() {
               <p className="text-teal-100 text-sm mt-0.5">{documents.length} documents · Manage company files securely</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={() => setShowUpload(true)} className="!bg-white !text-teal-700 hover:!bg-teal-50 border-0 shadow-md font-semibold">
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            Upload Document
-          </Button>
+          {canManage && (
+            <Button variant="ghost" onClick={() => setShowUpload(true)} className="!bg-white !text-teal-700 hover:!bg-teal-50 border-0 shadow-md font-semibold">
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Upload Document
+            </Button>
+          )}
         </div>
       </div>
 
@@ -281,7 +284,7 @@ function DocumentsPageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                     </svg>
                   </a>
-                  {isAdmin && (
+                  {canManage && (
                     <button
                       onClick={() => handleDelete(doc.id)}
                       className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
@@ -314,7 +317,7 @@ function DocumentsPageContent() {
                 <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
               </div>
 
-              {!doc.isApproved && isAdmin && (
+              {!doc.isApproved && canManage && (
                 <button
                   onClick={() => handleApprove(doc.id)}
                   className="mt-3 w-full py-2 text-sm font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"

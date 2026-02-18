@@ -88,10 +88,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { employeeId, documentType, title, filePath, fileSize, fileType, description, expiryDate, visibility } = body;
 
-    // Employees can only upload for themselves
-    let targetEmployeeId = employeeId;
+    // Only users with manage permission can upload
     const managePerm = await checkPermission(user!.userId, user!.role, 'documents', 'manage');
     if (!managePerm.allowed) {
+      return NextResponse.json({ error: 'You do not have permission to upload documents' }, { status: 403 });
+    }
+
+    let targetEmployeeId = employeeId;
+    if (!targetEmployeeId) {
       const emp = await prisma.employee.findUnique({ where: { userId: user!.userId } });
       if (!emp) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
       targetEmployeeId = emp.id;
