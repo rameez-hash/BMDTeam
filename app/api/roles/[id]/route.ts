@@ -140,10 +140,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
 
-    if (role.isSystem) {
-      return NextResponse.json({ error: 'Cannot delete system roles' }, { status: 400 });
-    }
-
     if (role._count.employees > 0) {
       return NextResponse.json(
         { error: `Cannot delete role. ${role._count.employees} employee(s) are assigned to this role. Please reassign them first.` },
