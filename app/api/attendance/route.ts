@@ -331,6 +331,45 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
+    // Fetch the record first to check if it's ON_LEAVE
+    const attendanceRecord = await prisma.attendance.findUnique({
+      where: { id },
+      select: { id: true, employeeId: true, date: true, status: true },
+    });
+
+    if (!attendanceRecord) {
+      return NextResponse.json({ error: 'Attendance record not found' }, { status: 404 });
+    }
+
+    // If status is ON_LEAVE, restore the leave balance
+    if (attendanceRecord.status === 'ON_LEAVE') {
+      // Find the approved leave request that covers this date
+      const leaveRequest = await prisma.leaveRequest.findFirst({
+        where: {
+          employeeId: attendanceRecord.employeeId,
+          status: 'APPROVED',
+          startDate: { lte: attendanceRecord.date },
+          endDate: { gte: attendanceRecord.date },
+        },
+        select: { id: true, leaveTypeId: true, totalDays: true },
+      });
+
+      if (leaveRequest) {
+        // Restore 1 day to leave balance
+        const year = attendanceRecord.date.getFullYear();
+        await prisma.leaveBalance.updateMany({
+          where: {
+            employeeId: attendanceRecord.employeeId,
+            leaveTypeId: leaveRequest.leaveTypeId,
+            year: year,
+          },
+          data: {
+            usedDays: { decrement: 1 },
+          },
+        });
+      }
+    }
+
     // Delete related breaks first
     await prisma.attendanceBreak.deleteMany({ where: { attendanceId: id } });
     
