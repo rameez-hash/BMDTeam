@@ -779,9 +779,18 @@
     // ─── Fetch Profile (update designation + employeeDbId) ───
     async function fetchProfile(){
       try{var r=await apiCall('/auth/me');if(r.success&&r.user&&r.user.employee){
-        var d=r.user.employee.designation||'';
+        var emp=r.user.employee;
+        var d=emp.designation||'';
         if(d){user.designation=d;document.getElementById('phDesignation').textContent=d;}
-        if(r.user.employee.id&&!user.employeeDbId){user.employeeDbId=r.user.employee.id;await ipcRenderer.invoke('set-store','user',user);}
+        if(emp.id&&!user.employeeDbId){user.employeeDbId=emp.id;await ipcRenderer.invoke('set-store','user',user);}
+        // Update profile image
+        if(emp.profileImage && emp.profileImage!==user.profileImage){
+          user.profileImage=emp.profileImage;
+          await ipcRenderer.invoke('set-store','user',user);
+          var aw=document.getElementById('phAvatarWrap');
+          var imgSrc=user.profileImage.startsWith('http')?user.profileImage:apiUrl+user.profileImage;
+          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph-avatar-placeholder>'+user.name.charAt(0).toUpperCase()+'</div>\'">';
+        }
       }}catch(e){}
     }
 
