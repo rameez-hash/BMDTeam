@@ -234,6 +234,29 @@ export default function LeavePage() {
     } catch { toastRef.current.error('Failed'); }
   };
 
+  const handleCancelLeave = async (reqId: string, status: string) => {
+    const msg = status === 'APPROVED'
+      ? 'This will cancel the approved leave, restore leave balance, and remove ON_LEAVE attendance records. Continue?'
+      : 'Are you sure you want to cancel this pending leave request?';
+    openConfirm({ title: 'Cancel Leave', message: msg, variant: 'danger', confirmText: 'Cancel Leave', onConfirm: async () => {
+      closeConfirm();
+      try {
+        const res = await fetch(`/api/leave/requests/${reqId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          toastRef.current.success('Leave cancelled successfully');
+          fetchRequests();
+          setDetailReq(null);
+        } else {
+          const d = await res.json();
+          toastRef.current.error(d.error || 'Failed to cancel');
+        }
+      } catch { toastRef.current.error('Failed to cancel'); }
+    }});
+  };
+
   const handleSubmitRequest = async () => {
     if (!reqForm.leaveTypeId || !reqForm.startDate || !reqForm.endDate) {
       toastRef.current.error('Fill all required fields');
@@ -516,6 +539,15 @@ export default function LeavePage() {
                             className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg flex items-center justify-center text-sm transition-colors">✕</button>
                         </div>
                       )}
+                      {isAdmin && (req.status === 'APPROVED' || req.status === 'PENDING') && (
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => handleCancelLeave(req.id, req.status)}
+                            title="Cancel Leave"
+                            className="w-8 h-8 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg flex items-center justify-center text-xs font-bold transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -731,6 +763,14 @@ export default function LeavePage() {
               <div className="flex gap-3 pt-2 border-t border-slate-100">
                 <Button variant="success" className="flex-1" onClick={() => handleApproveReject(detailReq.id, 'APPROVED')}>Approve</Button>
                 <Button variant="danger" className="flex-1" onClick={() => setRejectModal({ reqId: detailReq.id, reason: '' })}>Reject</Button>
+              </div>
+            )}
+            {isAdmin && (detailReq.status === 'APPROVED' || detailReq.status === 'PENDING') && (
+              <div className="flex gap-3 pt-2 border-t border-slate-100">
+                <Button variant="danger" className="flex-1" onClick={() => handleCancelLeave(detailReq.id, detailReq.status)}>
+                  <svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                  Cancel Leave
+                </Button>
               </div>
             )}
           </div>

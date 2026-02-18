@@ -278,12 +278,14 @@ export async function DELETE(
       }
     }
 
-    if (leaveRequest.status !== 'PENDING') {
+    if (leaveRequest.status !== 'PENDING' && leaveRequest.status !== 'APPROVED') {
       return NextResponse.json(
-        { error: 'Only pending requests can be cancelled' },
+        { error: 'Only pending or approved requests can be cancelled' },
         { status: 400 }
       );
     }
+
+    const wasApproved = leaveRequest.status === 'APPROVED';
 
     // Update status
     await prisma.leaveRequest.update({
@@ -304,12 +306,45 @@ export async function DELETE(
     });
 
     if (leaveBalance) {
-      await prisma.leaveBalance.update({
-        where: { id: leaveBalance.id },
-        data: {
-          pendingDays: { decrement: leaveRequest.totalDays },
-        },
-      });
+      if (wasApproved) {
+        // Restore usedDays for approved leaves
+        await prisma.leaveBalance.update({
+          where: { id: leaveBalance.id },
+          data: {
+            usedDays: { decrement: leaveRequest.totalDays },
+          },
+        });
+
+        // Delete ON_LEAVE attendance records for this leave period
+        const startDate = new Date(leaveRequest.startDate);
+        const endDate = new Date(leaveRequest.endDate);
+        
+        // Find and delete all ON_LEAVE attendance records in this date range
+        const onLeaveRecords = await prisma.attendance.findMany({
+          where: {
+            employeeId: leaveRequest.employeeId,
+            status: 'ON_LEAVE',
+            date: { gte: startDate, lte: endDate },
+          },
+          select: { id: true },
+        });
+
+        if (onLeaveRecords.length > 0) {
+          const ids = onLeaveRecords.map(r => r.id);
+          await prisma.attendanceBreak.deleteMany({ where: { attendanceId: { in: ids } } });
+          await prisma.attendance.deleteMany({
+            where: { id: { in: ids } },
+          });
+        }
+      } else {
+        // Restore pendingDays for pending leaves
+        await prisma.leaveBalance.update({
+          where: { id: leaveBalance.id },
+          data: {
+            pendingDays: { decrement: leaveRequest.totalDays },
+          },
+        });
+      }
     }
 
     // Log activity

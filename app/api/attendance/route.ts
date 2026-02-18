@@ -341,7 +341,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Attendance record not found' }, { status: 404 });
     }
 
-    // If status is ON_LEAVE, restore the leave balance
+    // If status is ON_LEAVE, restore the leave balance and cancel the leave request
     if (attendanceRecord.status === 'ON_LEAVE') {
       // Find the approved leave request that covers this date
       const leaveRequest = await prisma.leaveRequest.findFirst({
@@ -351,7 +351,7 @@ export async function DELETE(request: NextRequest) {
           startDate: { lte: attendanceRecord.date },
           endDate: { gte: attendanceRecord.date },
         },
-        select: { id: true, leaveTypeId: true, totalDays: true },
+        select: { id: true, leaveTypeId: true, totalDays: true, startDate: true, endDate: true },
       });
 
       if (leaveRequest) {
@@ -367,6 +367,24 @@ export async function DELETE(request: NextRequest) {
             usedDays: { decrement: 1 },
           },
         });
+
+        // Check how many ON_LEAVE records remain for this leave request
+        const remainingOnLeave = await prisma.attendance.count({
+          where: {
+            employeeId: attendanceRecord.employeeId,
+            status: 'ON_LEAVE',
+            date: { gte: leaveRequest.startDate, lte: leaveRequest.endDate },
+            id: { not: attendanceRecord.id }, // exclude the one being deleted
+          },
+        });
+
+        // If no more ON_LEAVE records remain, cancel the leave request
+        if (remainingOnLeave === 0) {
+          await prisma.leaveRequest.update({
+            where: { id: leaveRequest.id },
+            data: { status: 'CANCELLED' },
+          });
+        }
       }
     }
 
