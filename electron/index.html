@@ -757,7 +757,8 @@
         document.getElementById('phDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
         var aw=document.getElementById('phAvatarWrap');
         if(user.profileImage){
-          aw.innerHTML='<img class="ph-avatar" src="'+apiUrl+user.profileImage+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph-avatar-placeholder>'+user.name.charAt(0).toUpperCase()+'</div>\'">';
+          var imgSrc=user.profileImage.startsWith('http')?user.profileImage:apiUrl+user.profileImage;
+          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph-avatar-placeholder>'+user.name.charAt(0).toUpperCase()+'</div>\'">';
         }else{
           aw.innerHTML='<div class="ph-avatar-placeholder">'+user.name.charAt(0).toUpperCase()+'</div>';
         }
