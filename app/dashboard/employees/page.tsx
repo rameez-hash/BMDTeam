@@ -615,6 +615,7 @@ function EmployeesPageContent() {
       zipCode: '',
       nic: '',
       joiningDate: '',
+      attendanceStartDate: '',
       departmentId: '',
       designation: '',
       shiftId: '',
