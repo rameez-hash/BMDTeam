@@ -26,8 +26,10 @@
 
     /* ═══ CONTAINER ═══ */
     .container{height:calc(100vh - 36px);overflow-y:auto;scroll-behavior:smooth}
-    .container::-webkit-scrollbar{width:3px}
-    .container::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+    .container::-webkit-scrollbar{width:8px}
+    .container::-webkit-scrollbar-track{background:#1e293b;border-radius:4px}
+    .container::-webkit-scrollbar-thumb{background:#475569;border-radius:4px}
+    .container::-webkit-scrollbar-thumb:hover{background:#64748b}
 
     /* ═══ LOGIN ═══ */
     .login{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:linear-gradient(160deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);padding:40px}
@@ -292,9 +294,10 @@
     .ea-stat.sa .ea-stat-v{color:#f87171}
     .ea-stat.sv .ea-stat-v{color:#a78bfa}
     .emp-att-list{background:#111827;border-radius:12px;border:1px solid #1e293b;overflow:hidden;max-height:400px;overflow-y:auto}
-    .emp-att-list::-webkit-scrollbar{width:4px}
-    .emp-att-list::-webkit-scrollbar-track{background:transparent}
-    .emp-att-list::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+    .emp-att-list::-webkit-scrollbar{width:8px}
+    .emp-att-list::-webkit-scrollbar-track{background:#1e293b;border-radius:4px}
+    .emp-att-list::-webkit-scrollbar-thumb{background:#475569;border-radius:4px}
+    .emp-att-list::-webkit-scrollbar-thumb:hover{background:#64748b}
     .emp-att-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s}
     .emp-att-item:last-child{border-bottom:none}
     .emp-att-item:hover{background:rgba(255,255,255,.03)}
@@ -758,7 +761,7 @@
         var aw=document.getElementById('phAvatarWrap');
         if(user.profileImage){
           var imgSrc=user.profileImage.startsWith('http')?user.profileImage:apiUrl+user.profileImage;
-          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph-avatar-placeholder>'+user.name.charAt(0).toUpperCase()+'</div>\'">';
+          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" crossorigin="anonymous" onerror="this.onerror=null;this.parentNode.innerHTML=\'<div class=\\\"ph-avatar-placeholder\\\">' +user.name.charAt(0).toUpperCase()+'</div>\'">';
         }else{
           aw.innerHTML='<div class="ph-avatar-placeholder">'+user.name.charAt(0).toUpperCase()+'</div>';
         }
@@ -789,7 +792,7 @@
           await ipcRenderer.invoke('set-store','user',user);
           var aw=document.getElementById('phAvatarWrap');
           var imgSrc=user.profileImage.startsWith('http')?user.profileImage:apiUrl+user.profileImage;
-          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph-avatar-placeholder>'+user.name.charAt(0).toUpperCase()+'</div>\'">';
+          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" crossorigin="anonymous" onerror="this.onerror=null;this.parentNode.innerHTML=\'<div class=\\\"ph-avatar-placeholder\\\">' +user.name.charAt(0).toUpperCase()+'</div>\'">';
         }
       }}catch(e){}
     }
@@ -851,8 +854,10 @@
         document.getElementById('eaLate').textContent=stats.late||0;
         document.getElementById('eaAbsent').textContent=stats.absent||0;
         document.getElementById('eaLeave').textContent=stats.onLeave||0;
-        empAttFilter='all';
-        document.querySelectorAll('.ea-fbtn').forEach(function(b){b.classList.toggle('active',b.textContent==='All')});
+        if(!empAttFilter||empAttFilter==='all'){
+          empAttFilter='all';
+          document.querySelectorAll('.ea-fbtn').forEach(function(b){b.classList.toggle('active',b.textContent==='All')});
+        }
         renderEmpAttList();
       }catch(e){console.error('fetchAllAtt',e);el.innerHTML='<div class="empty">Failed to load</div>'}
     }
@@ -876,9 +881,9 @@
       var showName=!eaSelectedEmp;
       var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       el.innerHTML=filtered.map(function(r){
-        var dt=new Date(r.date+'T00:00:00');
-        var dd=dt.getDate();
-        var dn=days[dt.getDay()];
+        var dt=new Date(r.date);
+        var dd=isNaN(dt.getTime())?'--':dt.getDate();
+        var dn=isNaN(dt.getTime())?'':days[dt.getDay()];
         var stClass='st-absent',stLabel='Absent';
         if(r.status==='PRESENT'){stClass='st-present';stLabel='Present'}
         else if(r.status==='HALF_DAY'){stClass='st-half';stLabel='Half Day'}
@@ -889,7 +894,7 @@
         var timeStr=r.checkIn?fmtTime(r.checkIn)+(r.checkOut?' \u2192 '+fmtTime(r.checkOut):''):'';
         var e=r.employee||{};
         var name=showName?((e.firstName||'')+' '+(e.lastName||'')).trim():'';
-        var infoHtml=showName?'<div class="ea-info"><div class="ea-name">'+name+'</div><div class="ea-dept">'+(e.department?e.department.name:'')+'</div></div>':'<div class="ea-info">'+(timeStr?'<div class="ea-name" style="color:#94a3b8;font-weight:500">'+timeStr+'</div>':'<div class="ea-dept">No check-in</div>')+'</div>';
+        var infoHtml=showName?'<div class="ea-info"><div class="ea-name">'+name+'</div><div class="ea-dept">'+(e.department&&e.department.name?e.department.name:'')+'</div></div>':'<div class="ea-info">'+(timeStr?'<div class="ea-name" style="color:#94a3b8;font-weight:500">'+timeStr+'</div>':'<div class="ea-dept">No check-in</div>')+'</div>';
         var rightHtml='<div class="ea-right"><span class="ea-status '+stClass+'">'+stLabel+'</span>'+(showName&&timeStr?'<span class="ea-time">'+timeStr+'</span>':'')+'</div>';
         return '<div class="emp-att-item"><div class="ea-date-col"><div class="ea-date-num">'+dd+'</div><div class="ea-date-day">'+dn+'</div></div>'+infoHtml+rightHtml+'</div>'
       }).join('');
@@ -968,8 +973,7 @@
     }
     function refreshAfterAction(){
       var isAdmin=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');
-      fetchStatus();
-      if(!isAdmin){fetchMonthly();}
+      if(!isAdmin){fetchStatus();fetchMonthly();}
       if(isAdmin){fetchAllAttendance();fetchAdminData();}
     }
 
@@ -1097,7 +1101,7 @@
     ipcRenderer.on('quick-action',function(_,a){if(!token)return;switch(a){case'check-in':checkIn();break;case'check-out':checkOut();break;case'break-start':startBreak();break;case'break-end':endBreak();break}});
 
     // Auto-refresh every 10 seconds - all data
-    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');fetchStatus();if(!isA)fetchMonthly();if(isA){fetchAllAttendance();fetchAdminData();}fetchNotifications();fetchAnnouncements();fetchHolidays();}},10000);
+    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');if(!isA){fetchStatus();fetchMonthly();}if(isA){fetchAllAttendance();fetchAdminData();}fetchNotifications();fetchAnnouncements();fetchHolidays();}},10000);
 
     // Enter key
     document.getElementById('password').addEventListener('keypress',function(e){if(e.key==='Enter')login()});
