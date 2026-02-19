@@ -46,10 +46,12 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
+      "allowElevation": true,
       "allowToChangeInstallationDirectory": false,
       "installerIcon": "assets/iconbmd.ico",
       "uninstallerIcon": "assets/iconbmd.ico",
-      "installerHeaderIcon": "assets/iconbmd.ico"
+      "installerHeaderIcon": "assets/iconbmd.ico",
+      "include": "installer.nsh"
     },
     "mac": {
       "target": "dmg",
