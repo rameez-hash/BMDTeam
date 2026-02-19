@@ -282,7 +282,7 @@ export async function DELETE(
     // Log activity
     await logActivity({
       userId: user!.userId,
-      action: ActivityActions.DELETE,
+      action: ActivityActions.ATTENDANCE_CORRECTION_DELETE,
       module: ActivityModules.ATTENDANCE,
       resourceId: id,
       description: `Deleted attendance correction record for ${correction.employee.firstName} ${correction.employee.lastName}`,
