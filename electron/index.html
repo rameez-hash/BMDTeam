@@ -236,6 +236,25 @@
     .hol-sub{font-size:10px;color:#64748b;margin-top:1px}
     .hol-badge{font-size:9px;font-weight:600;color:#60a5fa;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);padding:2px 8px;border-radius:6px;white-space:nowrap}
 
+    /* ═══ NOTIFICATION TAB ═══ */
+    .ntab-mark-all{font-size:9px;font-weight:600;color:#60a5fa;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:6px;padding:3px 8px;cursor:pointer;font-family:inherit;transition:all .15s}
+    .ntab-mark-all:hover{background:rgba(59,130,246,.2)}
+    .ntab-item{background:#111827;border-radius:10px;border:1px solid #1e293b;padding:12px;margin-bottom:6px;cursor:pointer;transition:background .15s}
+    .ntab-item:hover{background:rgba(255,255,255,.03)}
+    .ntab-item.unread{border-left:3px solid #60a5fa}
+    .ntab-item .nt-title{font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:2px}
+    .ntab-item .nt-msg{font-size:10px;color:#94a3b8;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .ntab-item .nt-time{font-size:9px;color:#475569;margin-top:4px}
+    .ntab-item.unread .nt-title{color:#60a5fa}
+    /* ═══ REFRESH BUTTON ═══ */
+    .refresh-bar{display:flex;align-items:center;justify-content:flex-end;padding:2px 20px 4px;gap:8px}
+    .refresh-btn{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:600;color:#64748b;background:none;border:1px solid #1e293b;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+    .refresh-btn:hover{color:#e2e8f0;border-color:#334155;background:rgba(255,255,255,.04)}
+    .refresh-btn svg{width:12px;height:12px}
+    .refresh-btn.spinning svg{animation:spin .8s linear infinite}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    .refresh-time{font-size:8px;color:#475569}
+
     /* Sign Out */
     .so-btn{display:block;margin:12px 20px 16px;width:calc(100% - 40px);padding:9px;border:1px solid #1e293b;border-radius:8px;background:#111827;color:#64748b;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
     .so-btn:hover{background:rgba(239,68,68,.08);color:#f87171;border-color:rgba(239,68,68,.3)}
@@ -346,7 +365,7 @@
   <div class="titlebar">
     <div class="titlebar-brand">
       <img src="assets/logo-dark.webp" alt="BMD Digital">
-      <span style="font-size:9px;color:#475569;margin-left:2px">v1.1.0</span>
+      <span style="font-size:9px;color:#475569;margin-left:2px">v1.2.0</span>
     </div>
     <div class="titlebar-right">
       <button class="tb-btn tb-min" onclick="minimize()" title="Minimize">
@@ -494,7 +513,8 @@
       <div class="tabs" id="tabsBar">
         <div class="tab active" data-tab="attendance" onclick="switchTab('attendance')">Attendance</div>
         <div class="tab" data-tab="admin" onclick="switchTab('admin')" id="adminTabBtn" style="display:none">Admin</div>
-        <div class="tab" data-tab="news" onclick="switchTab('news')">News</div>
+        <div class="tab" data-tab="news" onclick="switchTab('news')">Announcements</div>
+        <div class="tab" data-tab="notifications" onclick="switchTab('notifications')" id="notifTabBtn">Notifications <span id="notifTabBadge" style="display:none;font-size:8px;background:#ef4444;color:#fff;border-radius:8px;padding:0 4px;margin-left:2px;min-width:14px;height:14px;align-items:center;justify-content:center;font-weight:700">0</span></div>
         <div class="tab" data-tab="holidays" onclick="switchTab('holidays')">Holidays</div>
       </div>
 
@@ -541,10 +561,16 @@
         </div>
       </div>
 
-      <!-- Tab: News/Announcements -->
+      <!-- Tab: Announcements -->
       <div class="tab-content" id="tc-news">
         <div class="sec-title">Announcements</div>
         <div id="annList"><div class="empty">Loading...</div></div>
+      </div>
+
+      <!-- Tab: Notifications -->
+      <div class="tab-content" id="tc-notifications">
+        <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">Notifications <button class="ntab-mark-all" onclick="markAllRead()">Mark all read</button></div>
+        <div id="notifTabList"><div class="empty">Loading...</div></div>
       </div>
 
       <!-- Tab: Holidays -->
@@ -600,6 +626,15 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Refresh Bar -->
+      <div class="refresh-bar" id="refreshBar">
+        <span class="refresh-time" id="refreshTime"></span>
+        <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Refresh
+        </button>
       </div>
 
       <!-- Sign Out -->
@@ -778,6 +813,7 @@
       if(isAdmin){fetchEmpList();fetchAllAttendance();updateMonthLabel();}
       fetchNotifications();fetchAnnouncements();fetchHolidays();
       if(isAdmin)fetchAdminData();
+      lastRefreshTime=Date.now();if(typeof updateRefreshLabel==='function')updateRefreshLabel();
     }
 
     // ─── Fetch Profile (update designation + employeeDbId) ───
@@ -1054,8 +1090,20 @@
       var unread=notifications.filter(function(n){return!n.isRead}).length;
       badge.textContent=unread>99?'99+':unread;
       badge.classList.toggle('off',unread===0);
-      if(!notifications.length){list.innerHTML='<div class="empty">No notifications</div>';return}
+      // Update notification tab badge
+      var ntBadge=document.getElementById('notifTabBadge');
+      if(ntBadge){ntBadge.textContent=unread;ntBadge.style.display=unread>0?'inline-flex':'none';}
+      if(!notifications.length){list.innerHTML='<div class="empty">No notifications</div>';renderNotifTab();return}
       list.innerHTML=notifications.map(function(n){return '<div class="ni '+(n.isRead?'':'unread')+'" onclick="markRead(\''+n.id+'\')"><div class="ni-t">'+n.title+'</div><div class="ni-m">'+(n.message||'')+'</div><div class="ni-time">'+timeAgo(new Date(n.createdAt))+'</div></div>'}).join('');
+      renderNotifTab();
+    }
+    function renderNotifTab(){
+      var el=document.getElementById('notifTabList');
+      if(!el)return;
+      if(!notifications.length){el.innerHTML='<div class="empty">No notifications</div>';return}
+      el.innerHTML=notifications.map(function(n){
+        return '<div class="ntab-item '+(n.isRead?'':'unread')+'" onclick="markRead(\''+n.id+'\')"><div class="nt-title">'+n.title+'</div><div class="nt-msg">'+(n.message||'')+'</div><div class="nt-time">'+timeAgo(new Date(n.createdAt))+'</div></div>';
+      }).join('');
     }
     async function markRead(id){try{await apiCall('/notifications','PUT',{id:id});var n=notifications.find(function(x){return x.id===id});if(n)n.isRead=true;renderNotifs()}catch(e){}}
     async function markAllRead(){try{await apiCall('/notifications','PUT',{markAllRead:true});notifications.forEach(function(n){n.isRead=true});renderNotifs()}catch(e){}}
@@ -1101,8 +1149,15 @@
     // ─── Tray Actions ───
     ipcRenderer.on('quick-action',function(_,a){if(!token)return;switch(a){case'check-in':checkIn();break;case'check-out':checkOut();break;case'break-start':startBreak();break;case'break-end':endBreak();break}});
 
-    // Auto-refresh every 10 seconds - all data
-    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');if(!isA){fetchStatus();fetchMonthly();}if(isA){fetchAllAttendance();fetchAdminData();}fetchNotifications();fetchAnnouncements();fetchHolidays();}},10000);
+    // Auto-refresh every 2 minutes
+    var lastRefreshTime=Date.now();
+    function updateRefreshLabel(){var el=document.getElementById('refreshTime');if(!el)return;var s=Math.floor((Date.now()-lastRefreshTime)/1000);if(s<60)el.textContent='Updated just now';else el.textContent='Updated '+Math.floor(s/60)+'m ago';}
+    setInterval(updateRefreshLabel,15000);
+    function manualRefresh(){
+      var btn=document.getElementById('refreshBtn');btn.classList.add('spinning');btn.disabled=true;
+      fetchAll().then(function(){lastRefreshTime=Date.now();updateRefreshLabel();btn.classList.remove('spinning');btn.disabled=false}).catch(function(){btn.classList.remove('spinning');btn.disabled=false});
+    }
+    setInterval(function(){if(token){var isA=user&&(user.role==='ADMIN'||user.role==='HR'||user.role==='MANAGER');if(!isA){fetchStatus();fetchMonthly();}if(isA){fetchAllAttendance();fetchAdminData();}fetchNotifications();fetchAnnouncements();fetchHolidays();lastRefreshTime=Date.now();updateRefreshLabel();}},120000);
 
     // Enter key
     document.getElementById('password').addEventListener('keypress',function(e){if(e.key==='Enter')login()});
