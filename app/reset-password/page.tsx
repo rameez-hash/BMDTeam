@@ -63,8 +63,8 @@ function ResetPasswordForm() {
         {/* Logo */}
         <div className="flex justify-center mb-10">
           <Image
-            src="/logo-dark.webp"
-            alt="WorkMy"
+            src="/logo-rename.png"
+            alt="BMD Digital"
             width={180}
             height={60}
             className="object-contain"

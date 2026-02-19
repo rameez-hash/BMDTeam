@@ -117,7 +117,7 @@ export default function TopNavigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src="/logo-dark.webp" alt="BMD Digital" className="w-9 h-9 flex-shrink-0 object-contain" />
+            <img src="/logo-rename.png" alt="BMD Digital" className="w-9 h-9 flex-shrink-0 object-contain" />
             <div className="hidden sm:block">
               <h1 className="text-lg font-bold text-slate-900">BMD Digital</h1>
               <p className="text-xs text-slate-500 -mt-0.5">HR Management</p>

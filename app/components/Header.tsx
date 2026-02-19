@@ -287,7 +287,7 @@ export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center">
-            <Image src="/logo-dark.webp" alt="BMD Digital" width={32} height={32} className="object-contain" priority />
+            <Image src="/logo-rename.png" alt="BMD Digital" width={32} height={32} className="object-contain" priority />
           </div>
 
           {/* Search */}

@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "build": "electron-builder && node -e \"const {rcedit}=require('rcedit');rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico','version-string':{CompanyName:'BMD Digital',FileDescription:'BMD HRMS Desktop App',ProductName:'BMD HRMS'}}).then(()=>console.log('Icon patched')).catch(e=>console.error(e))\"",
     "build:win": "electron-builder --win && node -e \"require('rcedit').rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico','version-string':{CompanyName:'BMD Digital',FileDescription:'BMD HRMS Desktop App',ProductName:'BMD HRMS',LegalCopyright:'Copyright 2026 BMD Digital'}})\" && npx electron-builder --win nsis --prepackaged output/win-unpacked",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"

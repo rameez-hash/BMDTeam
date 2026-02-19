@@ -331,7 +331,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
         <Link href="/dashboard" className="flex items-center">
           <Image
-            src="/logo-dark.webp"
+            src="/logo-rename.png"
             alt="BMD Digital"
             width={200}
             height={200}

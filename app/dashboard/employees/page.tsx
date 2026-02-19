@@ -197,6 +197,7 @@ function EmployeesPageContent() {
   const fetchEmployees = useCallback(async () => {
     try {
       const params = new URLSearchParams();
+      params.append('limit', '100');
       if (searchTerm) params.append('search', searchTerm);
       if (filterDepartment) params.append('departmentId', filterDepartment);
 

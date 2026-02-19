@@ -227,3 +227,77 @@ export async function PUT(
     );
   }
 }
+
+// DELETE /api/attendance/corrections/[id] - Delete a correction record
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user, error } = await authenticate(request);
+    if (error) return error;
+
+    // Check permission to manage corrections
+    const perm = await checkPermission(user!.userId, user!.role, 'attendance', 'approve');
+    if (!perm.allowed) {
+      return NextResponse.json(
+        { error: 'You do not have permission to delete correction records' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    const correction = await prisma.attendanceCorrection.findUnique({
+      where: { id },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            departmentId: true,
+          },
+        },
+      },
+    });
+
+    if (!correction) {
+      return NextResponse.json(
+        { error: 'Correction request not found' },
+        { status: 404 }
+      );
+    }
+
+    // DEPARTMENT scope: can only delete corrections from own department
+    if (perm.scope === 'DEPARTMENT' && correction.employee.departmentId !== user!.departmentId) {
+      return NextResponse.json(
+        { error: 'Not authorized to delete corrections from other departments' },
+        { status: 403 }
+      );
+    }
+
+    await prisma.attendanceCorrection.delete({ where: { id } });
+
+    // Log activity
+    await logActivity({
+      userId: user!.userId,
+      action: ActivityActions.DELETE,
+      module: ActivityModules.ATTENDANCE,
+      resourceId: id,
+      description: `Deleted attendance correction record for ${correction.employee.firstName} ${correction.employee.lastName}`,
+      request,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Correction record deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete correction error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

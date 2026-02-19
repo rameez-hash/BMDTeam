@@ -69,7 +69,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-10">
           <Image
-            src="/logo-dark.webp"
+            src="/logo-rename.png"
             alt="BMD Digital"
             width={180}
             height={60}

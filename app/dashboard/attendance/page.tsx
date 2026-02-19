@@ -613,6 +613,33 @@ export default function AttendancePage() {
     });
   };
 
+  const handleDeleteCorrection = (correction: AttendanceCorrection) => {
+    openConfirm({
+      title: 'Delete Correction Record',
+      message: `Delete this correction record for ${correction.employee ? correction.employee.firstName + ' ' + correction.employee.lastName : '—'}? This action cannot be undone.`,
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        closeConfirm();
+        try {
+          const res = await fetch(`/api/attendance/corrections/${correction.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          if (res.ok) {
+            toast.success(data.message || 'Correction record deleted');
+            fetchCorrections();
+          } else {
+            toast.error(data.error || 'Failed to delete correction');
+          }
+        } catch {
+          toast.error('Failed to delete correction');
+        }
+      },
+    });
+  };
+
   const handleDeleteAttendance = async (record: AttendanceRecord) => {
     if (!record.id || record.id.startsWith('weekend-')) {
       toast.error('This record cannot be deleted.');
@@ -1240,6 +1267,12 @@ export default function AttendancePage() {
                             ) : c.status === 'PENDING' ? (
                               <span className="text-[10px] text-slate-400 italic">Own request</span>
                             ) : null}
+                            {c.status !== 'PENDING' && (
+                              <button onClick={() => handleDeleteCorrection(c)}
+                                className="w-8 h-8 bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded-lg flex items-center justify-center text-sm transition-colors" title="Delete record">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            )}
                             <span className="text-[10px] text-slate-400">{new Date(c.createdAt).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' })}</span>
                           </div>
                         </div>

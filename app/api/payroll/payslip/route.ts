@@ -16,9 +16,9 @@ const formatPKR = (amount: number) => {
 // --- Load logo as base64 ---
 function getLogoBase64(): string {
   try {
-    const logoPath = path.join(process.cwd(), 'public', 'logo-dark.webp');
+    const logoPath = path.join(process.cwd(), 'public', 'logo-rename.png');
     const buf = fs.readFileSync(logoPath);
-    return 'data:image/webp;base64,' + buf.toString('base64');
+    return 'data:image/png;base64,' + buf.toString('base64');
   } catch {
     return '';
   }
