@@ -5,11 +5,11 @@ export const maxDuration = 60; // Allow up to 60s for large file streaming
 
 // GitHub Release asset details for private repo download proxy
 const GITHUB_REPO = 'rameez-hash/BMDHRMS';
-const RELEASE_TAG = 'v1.0.0';
+const RELEASE_TAG = 'v1.3.0';
 
 const ASSETS: Record<string, { name: string; mime: string }> = {
-  win: { name: 'BMD.HRMS.Setup.1.0.0.exe', mime: 'application/x-msdownload' },
-  mac: { name: 'BMD.HRMS-1.0.0.dmg', mime: 'application/x-apple-diskimage' },
+  win: { name: 'BMD.HRMS.Setup.1.3.0.exe', mime: 'application/x-msdownload' },
+  mac: { name: 'BMD.HRMS-1.3.0.dmg', mime: 'application/x-apple-diskimage' },
 };
 
 export async function GET(request: NextRequest) {

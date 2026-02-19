@@ -1,4 +1,4 @@
-name: Build macOS Desktop App
+name: Build Desktop App (Windows + macOS)
 
 on:
   workflow_dispatch:
@@ -29,28 +29,21 @@ jobs:
       - name: Create macOS icon
         working-directory: electron
         run: |
-          # Install iconutil dependencies
           npm install sharp --save-dev
-          
-          # Generate iconset from PNG
           node -e "
           const sharp = require('sharp');
           const fs = require('fs');
           const path = require('path');
-          
           async function makeIconset() {
             const src = path.join(__dirname, 'assets', 'iconbmd.png');
             const iconsetDir = path.join(__dirname, 'assets', 'iconbmd.iconset');
             fs.mkdirSync(iconsetDir, { recursive: true });
-            
             const sizes = [16, 32, 64, 128, 256, 512];
             for (const size of sizes) {
               await sharp(src)
                 .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
                 .png()
                 .toFile(path.join(iconsetDir, 'icon_' + size + 'x' + size + '.png'));
-              
-              // @2x versions
               const size2x = size * 2;
               if (size2x <= 1024) {
                 await sharp(src)
@@ -63,8 +56,6 @@ jobs:
           }
           makeIconset();
           "
-          
-          # Convert iconset to icns using macOS native tool
           iconutil -c icns assets/iconbmd.iconset -o assets/iconbmd.icns
           rm -rf assets/iconbmd.iconset
           echo "Created iconbmd.icns"
@@ -72,8 +63,7 @@ jobs:
 
       - name: Build macOS DMG
         working-directory: electron
-        run: |
-          npx electron-builder --mac --publish never
+        run: npx electron-builder --mac --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
@@ -81,28 +71,70 @@ jobs:
         working-directory: electron
         run: ls -la output/*.dmg || ls -la output/
 
-      - name: Upload to GitHub Release
+      - name: Upload Mac DMG to Release
         working-directory: electron
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Find the DMG file
           DMG_FILE=$(ls output/*.dmg | head -1)
-          DMG_NAME=$(basename "$DMG_FILE")
-          echo "Found: $DMG_FILE ($DMG_NAME)"
+          cp "$DMG_FILE" "output/BMD.HRMS-1.3.0.dmg"
           
-          # Copy with standard name
-          cp "$DMG_FILE" "output/BMD.HRMS-1.0.0.dmg"
+          # Create release if it doesn't exist
+          gh release view v1.3.0 --repo ${{ github.repository }} 2>/dev/null || \
+            gh release create v1.3.0 --repo ${{ github.repository }} --title "BMD HRMS v1.3.0" --notes "Desktop app v1.3.0 - All Employees table view, OT fix, improved shift display"
           
-          # Delete existing DMG from release if any
-          EXISTING=$(gh release view v1.0.0 --repo ${{ github.repository }} --json assets -q '.assets[].name' 2>/dev/null | grep '.dmg' || true)
-          if [ -n "$EXISTING" ]; then
-            echo "Deleting existing: $EXISTING"
-            gh release delete-asset v1.0.0 "$EXISTING" --repo ${{ github.repository }} --yes
-          fi
+          gh release upload v1.3.0 "output/BMD.HRMS-1.3.0.dmg" --repo ${{ github.repository }} --clobber
+          echo "Mac DMG uploaded!"
+          gh release view v1.3.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
+
+  build-win:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: electron
+        run: npm install
+
+      - name: Build Windows Installer
+        working-directory: electron
+        run: npx electron-builder --win --publish never
+
+      - name: Patch icon with rcedit
+        working-directory: electron
+        run: |
+          npx rcedit "output/win-unpacked/BMD HRMS.exe" --set-icon "assets/iconbmd.ico" --set-version-string CompanyName "BMD Digital" --set-version-string FileDescription "BMD HRMS Desktop App" --set-version-string ProductName "BMD HRMS"
+          echo "Icon patched"
+
+      - name: Rebuild NSIS from patched unpacked
+        working-directory: electron
+        run: npx electron-builder --win nsis --prepackaged "output/win-unpacked"
+
+      - name: List output
+        working-directory: electron
+        run: Get-ChildItem output/*.exe | Select-Object Name, Length
+
+      - name: Upload Windows Installer to Release
+        working-directory: electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          EXE_FILE=$(ls output/*.exe | grep -i setup | head -1)
+          cp "$EXE_FILE" "output/BMD.HRMS.Setup.1.3.0.exe"
           
-          # Upload using gh CLI
-          gh release upload v1.0.0 "output/BMD.HRMS-1.0.0.dmg" --repo ${{ github.repository }} --clobber
+          # Create release if it doesn't exist
+          gh release view v1.3.0 --repo ${{ github.repository }} 2>/dev/null || \
+            gh release create v1.3.0 --repo ${{ github.repository }} --title "BMD HRMS v1.3.0" --notes "Desktop app v1.3.0 - All Employees table view, OT fix, improved shift display"
           
-          echo "Upload complete! Verifying..."
-          gh release view v1.0.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
+          gh release upload v1.3.0 "output/BMD.HRMS.Setup.1.3.0.exe" --repo ${{ github.repository }} --clobber
+          echo "Windows installer uploaded!"
+          gh release view v1.3.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
