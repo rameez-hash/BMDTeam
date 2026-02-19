@@ -84,14 +84,15 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform to the expected format
-    let records = attendanceRecords.map(record => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let records: any[] = attendanceRecords.map(record => {
       const isOnBreak = record.breaks.some(b => !b.endTime);
       return {
         id: record.id,
         date: record.date.toISOString(),
         checkIn: record.checkIn?.toISOString(),
         checkOut: record.checkOut?.toISOString(),
-        status: record.status,
+        status: record.status as string,
         workHours: record.workHours,
         workLocation: record.workLocation,
         isLate: record.isLate,
