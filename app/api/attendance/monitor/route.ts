@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
             employeeCode: true,
             profileImage: true,
             department: { select: { name: true } },
-            shift: { select: { name: true, startTime: true, endTime: true, workDays: true } },
+            shift: { select: { name: true, startTime: true, endTime: true, workDays: true, standardWorkHours: true } },
           },
         },
         breaks: true,
@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
         shiftName: record.shiftName,
         shiftStartTime: record.shiftStartTime,
         shiftEndTime: record.shiftEndTime,
+        shiftStandardWorkHours: record.shiftStandardWorkHours ?? record.employee?.shift?.standardWorkHours ?? null,
         breaks: record.breaks.map(b => ({
           id: b.id,
           startTime: b.startTime.toISOString(),
