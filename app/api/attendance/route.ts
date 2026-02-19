@@ -275,6 +275,20 @@ export async function GET(request: NextRequest) {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
+    // Compute stats from ALL records (before pagination) so frontend stat boxes are correct
+    const stats = {
+      total: allRecords.length,
+      present: allRecords.filter(r => r.status === 'PRESENT').length,
+      halfDay: allRecords.filter(r => r.status === 'HALF_DAY').length,
+      late: allRecords.filter(r => r.isLate === true).length,
+      absent: allRecords.filter(r => r.status === 'ABSENT').length,
+      onLeave: allRecords.filter(r => r.status === 'ON_LEAVE').length,
+      weekend: allRecords.filter(r => r.status === 'WEEKEND').length,
+      holiday: allRecords.filter(r => r.status === 'HOLIDAY').length,
+      notJoined: allRecords.filter(r => r.status === 'NOT_JOINED').length,
+      totalHours: allRecords.reduce((sum, r) => sum + ((r as { workHours?: number }).workHours || 0), 0),
+    };
+
     // Apply pagination
     const paginatedRecords = allRecords.slice(skip, skip + limit);
     const totalWithWeekends = allRecords.length;
@@ -282,6 +296,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: paginatedRecords,
+      stats,
       pagination: {
         page,
         limit,

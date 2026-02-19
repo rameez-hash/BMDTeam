@@ -258,17 +258,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Overall stats
-    const totalPresent = attendance.filter(a => a.status === 'PRESENT').length;
-    const totalAbsent = attendance.filter(a => a.status === 'ABSENT').length;
-    let totalLate = 0;
-    attendance.forEach(a => {
-      const emp = employees.find(e => e.id === a.employeeId);
-      const sStart = emp?.shift?.startTime || '09:00';
-      const grace = emp?.shift?.graceTime || 15;
-      if (isRecordLate(a, sStart, grace)) totalLate++;
-    });
-    const totalOnLeave = attendance.filter(a => a.status === 'ON_LEAVE').length;
+    // Overall stats — computed from gap-filled rows (not just DB records)
+    const totalPresent = rows.filter(r => r[17] === 'PRESENT' || r[17].startsWith('PRESENT')).length;
+    const totalAbsent = rows.filter(r => r[17] === 'ABSENT' || r[17].startsWith('ABSENT')).length;
+    const totalLate = rows.filter(r => r[18] === 'Yes').length;
+    const totalOnLeave = rows.filter(r => r[17] === 'ON_LEAVE' || r[17].startsWith('ON_LEAVE')).length;
     const totalHours = attendance.reduce((s, a) => s + (a.workHours || 0), 0);
     const totalExtraHours = attendance.reduce((s, a) => {
       const emp = employees.find(e => e.id === a.employeeId);
@@ -302,14 +296,23 @@ export async function GET(request: NextRequest) {
         const shortH = recs.reduce((s, a) => (a.workHours && a.workHours > 0 && a.workHours < std) ? s + (std - a.workHours) : s, 0);
 
         const pdfWorkDays = getWorkDays(emp.shift?.workDays);
+        const pdfEffectiveStart = emp.attendanceStartDate
+          ? new Date(emp.attendanceStartDate)
+          : emp.joiningDate ? new Date(emp.joiningDate) : null;
         let wkCnt = 0, holCnt = 0;
-        allDates.forEach(d => { if (!pdfWorkDays.includes(d.getDay())) wkCnt++; else if (holidayMap.has(formatDate(d))) holCnt++; });
-        const workDays = allDates.length - wkCnt - holCnt;
+        allDates.forEach(d => {
+          // Only count weekends/holidays from effective start date onwards
+          if (pdfEffectiveStart && d < pdfEffectiveStart) return;
+          if (!pdfWorkDays.includes(d.getDay())) wkCnt++;
+          else if (holidayMap.has(formatDate(d))) holCnt++;
+        });
+        const workDays = allDates.filter(d => !pdfEffectiveStart || d >= pdfEffectiveStart).length - wkCnt - holCnt;
 
         let absCnt = recs.filter(a => a.status === 'ABSENT').length;
         for (const d of allDates) {
           const ds = formatDate(d);
-          if (!attendanceMap.has(`${emp.id}_${ds}`) && pdfWorkDays.includes(d.getDay()) && !holidayMap.has(ds) && d < today) absCnt++;
+          const isBeforeEmpStart = pdfEffectiveStart && d < pdfEffectiveStart;
+          if (!isBeforeEmpStart && !attendanceMap.has(`${emp.id}_${ds}`) && pdfWorkDays.includes(d.getDay()) && !holidayMap.has(ds) && d < today) absCnt++;
         }
 
         const avgH = pres > 0 ? hrs / pres : 0;
@@ -363,6 +366,9 @@ export async function GET(request: NextRequest) {
               stHTML += ` <span class="pill" style="background:#fef2f2;color:#dc2626;border:1px solid #dc262633;margin-left:2px">Late</span>`;
             }
             if (rec.status === 'ABSENT') rc = 'ra'; else if (rec.status === 'ON_LEAVE') rc = 'rl';
+          } else if (pdfEffectiveStart && d < pdfEffectiveStart) {
+            rc = 'rw';
+            stHTML = `<span class="pill" style="background:#f1f5f9;color:#64748b;border:1px solid #64748b33">Not Joined</span>`;
           } else if (isWk) {
             rc = 'rw';
             stHTML = `<span class="pill" style="background:#f8fafc;color:#9ca3af;border:1px solid #9ca3af33">Weekend</span>`;

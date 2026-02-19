@@ -149,37 +149,49 @@ export async function GET(request: NextRequest) {
           lastName: true,
           employeeCode: true,
           profileImage: true,
+          joiningDate: true,
+          attendanceStartDate: true,
           department: { select: { name: true } },
           shift: { select: { name: true, startTime: true, endTime: true, workDays: true } },
         },
       });
 
-      // Generate weekend and holiday dates per employee based on their shift workDays
+      const today = parseDateUTC(getDateStringPKT(new Date()));
+
+      // Generate weekend, holiday, ABSENT, and NOT_JOINED records per employee
       for (const emp of allEmployees) {
         const empWorkDays = getWorkDays(emp.shift?.workDays);
-        const currentDate = new Date(start);
-        while (currentDate <= end) {
-          const dayOfWeek = currentDate.getDay();
-          const dateStr = formatDate(currentDate);
-          const existingRecord = records.find(
-            r => r.employee?.id === emp.id && formatDate(new Date(r.date)) === dateStr
-          );
-          if (!existingRecord) {
-            let specialType: 'WEEKEND' | 'HOLIDAY' | null = null;
-            let holidayName: string | undefined;
-            if (!empWorkDays.includes(dayOfWeek)) {
-              specialType = 'WEEKEND';
-            } else if (holidayMap.has(dateStr)) {
-              specialType = 'HOLIDAY';
-              holidayName = holidayMap.get(dateStr);
-            }
-            if (specialType) {
+        const empJoinDate = emp.attendanceStartDate
+          ? new Date(emp.attendanceStartDate)
+          : emp.joiningDate ? new Date(emp.joiningDate) : null;
+
+        const empData = {
+          id: emp.id,
+          firstName: emp.firstName,
+          lastName: emp.lastName,
+          employeeCode: emp.employeeCode,
+          profileImage: emp.profileImage,
+          department: emp.department,
+          shift: emp.shift,
+        };
+
+        // Generate NOT_JOINED records for dates before employee's effective start date
+        if (empJoinDate && empJoinDate > start) {
+          const preJoinDate = new Date(start);
+          const preJoinEnd = new Date(empJoinDate);
+          preJoinEnd.setDate(preJoinEnd.getDate() - 1);
+          while (preJoinDate <= preJoinEnd && preJoinDate <= end) {
+            const dateStr = formatDate(preJoinDate);
+            const existingRecord = records.find(
+              r => r.employee?.id === emp.id && formatDate(new Date(r.date)) === dateStr
+            );
+            if (!existingRecord) {
               records.push({
-                id: `${specialType.toLowerCase()}-${emp.id}-${dateStr}`,
-                date: new Date(currentDate).toISOString(),
+                id: `notjoined-${emp.id}-${dateStr}`,
+                date: new Date(preJoinDate).toISOString(),
                 checkIn: undefined,
                 checkOut: undefined,
-                status: specialType,
+                status: 'NOT_JOINED',
                 workHours: null,
                 workLocation: null,
                 isLate: false,
@@ -189,15 +201,76 @@ export async function GET(request: NextRequest) {
                 shiftStartTime: null,
                 shiftEndTime: null,
                 breaks: [],
-                employee: {
-                  id: emp.id,
-                  firstName: emp.firstName,
-                  lastName: emp.lastName,
-                  employeeCode: emp.employeeCode,
-                  profileImage: emp.profileImage,
-                  department: emp.department,
-                  shift: emp.shift,
-                },
+                employee: empData,
+              });
+            }
+            preJoinDate.setDate(preJoinDate.getDate() + 1);
+          }
+        }
+
+        const rangeStart = empJoinDate && empJoinDate > start ? empJoinDate : start;
+        const currentDate = new Date(rangeStart);
+        while (currentDate <= end) {
+          const dayOfWeek = currentDate.getDay();
+          const dateStr = formatDate(currentDate);
+          const existingRecord = records.find(
+            r => r.employee?.id === emp.id && formatDate(new Date(r.date)) === dateStr
+          );
+          if (!existingRecord) {
+            if (!empWorkDays.includes(dayOfWeek)) {
+              records.push({
+                id: `weekend-${emp.id}-${dateStr}`,
+                date: new Date(currentDate).toISOString(),
+                checkIn: undefined,
+                checkOut: undefined,
+                status: 'WEEKEND',
+                workHours: null,
+                workLocation: null,
+                isLate: false,
+                lateMinutes: 0,
+                isOnBreak: false,
+                shiftName: null,
+                shiftStartTime: null,
+                shiftEndTime: null,
+                breaks: [],
+                employee: empData,
+              });
+            } else if (holidayMap.has(dateStr)) {
+              records.push({
+                id: `holiday-${emp.id}-${dateStr}`,
+                date: new Date(currentDate).toISOString(),
+                checkIn: undefined,
+                checkOut: undefined,
+                status: 'HOLIDAY',
+                workHours: null,
+                workLocation: null,
+                isLate: false,
+                lateMinutes: 0,
+                isOnBreak: false,
+                shiftName: null,
+                shiftStartTime: null,
+                shiftEndTime: null,
+                breaks: [],
+                employee: empData,
+              });
+            } else if (new Date(currentDate) < today) {
+              // Past working day with no record = ABSENT
+              records.push({
+                id: `absent-${emp.id}-${dateStr}`,
+                date: new Date(currentDate).toISOString(),
+                checkIn: undefined,
+                checkOut: undefined,
+                status: 'ABSENT',
+                workHours: null,
+                workLocation: null,
+                isLate: false,
+                lateMinutes: 0,
+                isOnBreak: false,
+                shiftName: null,
+                shiftStartTime: null,
+                shiftEndTime: null,
+                breaks: [],
+                employee: empData,
               });
             }
           }
@@ -214,11 +287,14 @@ export async function GET(request: NextRequest) {
     const stats = {
       total: records.length,
       present: records.filter(r => r.status === 'PRESENT').length,
+      halfDay: records.filter(r => r.status === 'HALF_DAY').length,
       late: records.filter(r => r.isLate).length,
       absent: records.filter(r => r.status === 'ABSENT').length,
       onLeave: records.filter(r => r.status === 'ON_LEAVE').length,
       weekend: records.filter(r => r.status === 'WEEKEND').length,
       holiday: records.filter(r => r.status === 'HOLIDAY').length,
+      notJoined: records.filter(r => r.status === 'NOT_JOINED').length,
+      totalHours: records.reduce((sum, r) => sum + (r.workHours || 0), 0),
     };
 
     return NextResponse.json({

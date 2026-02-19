@@ -118,6 +118,7 @@ export default function AttendancePage() {
 
   // Records state
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [apiStats, setApiStats] = useState<{present:number;halfDay:number;late:number;absent:number;onLeave:number;weekend:number;holiday:number;totalHours:number} | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
@@ -382,12 +383,20 @@ export default function AttendancePage() {
         const result = await res.json();
         const recordsData = result.data || result.records || result.attendance || result;
         setRecords(Array.isArray(recordsData) ? recordsData : []);
+        // Use API-provided stats (computed from ALL records, not just paginated)
+        if (result.stats) {
+          setApiStats(result.stats);
+        } else {
+          setApiStats(null);
+        }
       } else {
         setRecords([]);
+        setApiStats(null);
       }
     } catch (error) {
       console.error('Failed to fetch attendance:', error);
       setRecords([]);
+      setApiStats(null);
     } finally {
       setLoading(false);
     }
@@ -858,10 +867,18 @@ export default function AttendancePage() {
   };
 
   const recordsArray = Array.isArray(records) ? records : [];
-  // Late count — ONLY use DB isLate field, never recalculate from shift times
-  // This ensures changing shift settings does NOT affect previous records
+  // Use server-computed stats (from ALL records) when available, fallback to client-side
   const computedLateCount = recordsArray.filter(r => r.isLate === true).length;
-  const stats = {
+  const stats = apiStats ? {
+    present: apiStats.present ?? 0,
+    halfDay: apiStats.halfDay ?? 0,
+    late: apiStats.late ?? 0,
+    absent: apiStats.absent ?? 0,
+    onLeave: apiStats.onLeave ?? 0,
+    weekend: apiStats.weekend ?? 0,
+    holiday: apiStats.holiday ?? 0,
+    totalHours: apiStats.totalHours ?? 0,
+  } : {
     present: recordsArray.filter(r => r.status === 'PRESENT').length,
     halfDay: recordsArray.filter(r => r.status === 'HALF_DAY').length,
     late: computedLateCount,
