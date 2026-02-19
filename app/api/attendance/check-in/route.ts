@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { formatDate, getAttendanceDate, calculateLateArrival, isOffDay, getWorkDays, parseDateUTC } from '@/lib/utils';
+import { formatDate, getAttendanceDate, calculateLateArrival, isOffDay, getWorkDays, parseDateUTC, getDateStringPKT } from '@/lib/utils';
 
 // POST /api/attendance/check-in
 export async function POST(request: NextRequest) {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         employee.shift.earlyCheckInGrace
       );
     } else {
-      attendanceDate = formatDate(now);
+      attendanceDate = getDateStringPKT(now);
     }
 
     // ── 4. Check if attendance date is an off day ──
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     // the user finished yesterday's shift and wants to start a new day.
     // Fall back to today's calendar date instead.
     if (existingAttendance?.checkIn && existingAttendance?.checkOut) {
-      const todayDate = formatDate(now);
+      const todayDate = getDateStringPKT(now);
       if (attendanceDate !== todayDate) {
         attendanceDate = todayDate;
 

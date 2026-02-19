@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
-import { getPaginationParams, formatDate, calculateLateArrival, calculateWorkHours, getWorkDays, parseDateUTC } from '@/lib/utils';
+import { getPaginationParams, formatDate, calculateLateArrival, calculateWorkHours, getWorkDays, parseDateUTC, getDateStringPKT } from '@/lib/utils';
 import { checkPermission } from '@/lib/permissions';
 
 // GET /api/attendance - List attendance records
@@ -240,8 +240,7 @@ export async function GET(request: NextRequest) {
               });
             } else {
               // Past working day with no record = ABSENT
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
+              const today = parseDateUTC(getDateStringPKT(new Date()));
               if (new Date(currentDate) < today) {
                 specialRecords.push({
                   id: `absent-${emp.id}-${dateStr}`,

@@ -1,5 +1,36 @@
 import { format, parseISO, differenceInMinutes, differenceInHours, startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
 
+// ── Pakistan Standard Time (PKT = UTC+5) helpers ──
+// Shift times (e.g., "08:00") are in PKT. On Vercel (UTC), JavaScript Date local
+// methods (getHours, setHours, etc.) use UTC, which causes wrong late/early
+// calculations. These helpers ensure all shift-related logic uses PKT explicitly.
+const PKT_OFFSET_HOURS = 5;
+const PKT_OFFSET_MS = PKT_OFFSET_HOURS * 60 * 60 * 1000;
+const PKT_TZ = '+05:00';
+
+/** Get YYYY-MM-DD string in PKT from a UTC Date */
+export function getDateStringPKT(date: Date): string {
+  const pkt = new Date(date.getTime() + PKT_OFFSET_MS);
+  return pkt.toISOString().slice(0, 10);
+}
+
+/** Get hours (0-23) in PKT from a Date */
+function getHoursPKT(date: Date): number {
+  const pkt = new Date(date.getTime() + PKT_OFFSET_MS);
+  return pkt.getUTCHours();
+}
+
+/** Get minutes (0-59) in PKT from a Date */
+function getMinutesPKT(date: Date): number {
+  const pkt = new Date(date.getTime() + PKT_OFFSET_MS);
+  return pkt.getUTCMinutes();
+}
+
+/** Create a UTC Date from a PKT date string + time string (e.g., "2025-07-14" + "08:00") */
+export function createDateFromPKT(dateStr: string, timeStr: string): Date {
+  return new Date(`${dateStr}T${timeStr}:00${PKT_TZ}`);
+}
+
 /**
  * Parse a date-only string (YYYY-MM-DD) as UTC midnight.
  * All date-only fields are stored at UTC midnight for consistency.
@@ -78,27 +109,26 @@ export function getAttendanceDate(checkInTime: Date, shiftStartTime: string, shi
   const isNight = isNightShift(shiftStartTime, shiftEndTime);
   
   if (!isNight) {
-    // Day shift - attendance is for check-in date
-    return formatDate(checkInTime);
+    // Day shift - attendance is for check-in date (in PKT)
+    return getDateStringPKT(checkInTime);
   }
   
-  // Night shift logic
+  // Night shift logic — use PKT hours/minutes
   const [endHours, endMins] = shiftEndTime.split(':').map(Number);
   const shiftEndTotalMins = endHours * 60 + endMins;
   
-  const checkInTotalMins = checkInTime.getHours() * 60 + checkInTime.getMinutes();
+  const checkInTotalMins = getHoursPKT(checkInTime) * 60 + getMinutesPKT(checkInTime);
   
   // After midnight but BEFORE shift end → belongs to previous day's shift
   // e.g., 03:00 (180 min) < 06:00 (360 min) → previous day
   if (checkInTotalMins < shiftEndTotalMins) {
-    const prevDate = new Date(checkInTime);
-    prevDate.setDate(prevDate.getDate() - 1);
-    return formatDate(prevDate);
+    const prevDate = new Date(checkInTime.getTime() - 24 * 60 * 60 * 1000);
+    return getDateStringPKT(prevDate);
   }
   
   // At or after shift end → current day (new day / next shift cycle)
   // e.g., 06:00 (360 min) → current day, 21:00 (1260 min) → current day
-  return formatDate(checkInTime);
+  return getDateStringPKT(checkInTime);
 }
 
 /**
@@ -135,31 +165,29 @@ export function calculateLateArrival(
   shiftStartTime: string, 
   shiftEndTime: string,
   graceMinutes: number = 15,
-  attendanceDate?: string // YYYY-MM-DD — anchor shift start to this date
+  attendanceDate?: string // YYYY-MM-DD in PKT — anchor shift start to this date
 ): { isLate: boolean; lateMinutes: number; isEarly: boolean; earlyMinutes: number } {
-  const [startHours, startMinutes] = shiftStartTime.split(':').map(Number);
   const isNight = isNightShift(shiftStartTime, shiftEndTime);
   
-  // Create shift start datetime
+  // Create shift start datetime using explicit PKT timezone
   let shiftStart: Date;
   
   if (attendanceDate) {
     // Anchor to the provided attendance date (reliable for manual/corrected records)
-    shiftStart = new Date(attendanceDate + 'T00:00:00');
-    shiftStart.setHours(startHours, startMinutes, 0, 0);
+    shiftStart = createDateFromPKT(attendanceDate, shiftStartTime);
   } else {
     // Infer from check-in time (original behavior for self check-in)
-    shiftStart = new Date(checkInTime);
-    shiftStart.setHours(startHours, startMinutes, 0, 0);
+    const dateStr = getDateStringPKT(checkInTime);
+    shiftStart = createDateFromPKT(dateStr, shiftStartTime);
     
     if (isNight) {
       const [endHours, endMins] = shiftEndTime.split(':').map(Number);
-      const checkInTotalMins = checkInTime.getHours() * 60 + checkInTime.getMinutes();
+      const checkInTotalMins = getHoursPKT(checkInTime) * 60 + getMinutesPKT(checkInTime);
       const shiftEndTotalMins = endHours * 60 + endMins;
 
       if (checkInTotalMins < shiftEndTotalMins) {
         // Check-in is after midnight but before shift end → previous day's shift
-        shiftStart.setDate(shiftStart.getDate() - 1);
+        shiftStart = new Date(shiftStart.getTime() - 24 * 60 * 60 * 1000);
       }
     }
   }
@@ -183,9 +211,8 @@ export function calculateLateArrival(
 }
 
 export function isLateArrival(checkInTime: Date, shiftStartTime: string, graceMinutes: number = 15): { isLate: boolean; lateMinutes: number } {
-  const [hours, minutes] = shiftStartTime.split(':').map(Number);
-  const shiftStart = new Date(checkInTime);
-  shiftStart.setHours(hours, minutes, 0, 0);
+  const dateStr = getDateStringPKT(checkInTime);
+  const shiftStart = createDateFromPKT(dateStr, shiftStartTime);
   
   const gracePeriodEnd = new Date(shiftStart.getTime() + graceMinutes * 60 * 1000);
   

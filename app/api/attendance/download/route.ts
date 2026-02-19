@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
-import { formatDate, formatTime, getMonthRange, getWorkDays , parseDateUTC } from '@/lib/utils';
+import { formatDate, formatTime, getMonthRange, getWorkDays, parseDateUTC, getDateStringPKT, createDateFromPKT } from '@/lib/utils';
 import fs from 'fs';
 import path from 'path';
 
@@ -175,8 +175,7 @@ export async function GET(request: NextRequest) {
     };
 
     const getCheckInLabel = (checkIn: Date, shiftStart: string) => {
-      const [sh, sm] = shiftStart.split(':').map(Number);
-      const sd = new Date(checkIn); sd.setHours(sh, sm, 0, 0);
+      const sd = createDateFromPKT(getDateStringPKT(checkIn), shiftStart);
       const diff = Math.round((checkIn.getTime() - sd.getTime()) / 60000);
       if (diff > 5) {
         const h = Math.floor(diff / 60), m = diff % 60;
@@ -192,8 +191,7 @@ export async function GET(request: NextRequest) {
       if (rec.isLate) return true;
       if (!rec.checkIn) return false;
       const ci = new Date(rec.checkIn);
-      const [sh, sm] = shiftStart.split(':').map(Number);
-      const sd = new Date(ci); sd.setHours(sh, sm, 0, 0);
+      const sd = createDateFromPKT(getDateStringPKT(ci), shiftStart);
       const diff = Math.round((ci.getTime() - sd.getTime()) / 60000);
       return diff > grace;
     };
@@ -275,7 +273,7 @@ export async function GET(request: NextRequest) {
     if (format === 'pdf') {
       const dateRangeText = `${formatDate(start, 'dd MMM yyyy')} to ${formatDate(end, 'dd MMM yyyy')}`;
       const monthName = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = parseDateUTC(getDateStringPKT(new Date()));
       const logoBase64 = getLogoBase64();
 
       let empHTML = '';
