@@ -1,12 +1,12 @@
 {
   "name": "hrms-desktop",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "HRMS Desktop Application - Attendance Tracking",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder && node -e \"const {rcedit}=require('rcedit');rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico','version-string':{CompanyName:'BMD Digital',FileDescription:'BMD HRMS Desktop App',ProductName:'BMD HRMS'}}).then(()=>console.log('Icon patched')).catch(e=>console.error(e))\"",
-    "build:win": "electron-builder --win && node -e \"require('rcedit').rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico','version-string':{CompanyName:'BMD Digital',FileDescription:'BMD HRMS Desktop App',ProductName:'BMD HRMS',LegalCopyright:'Copyright 2026 BMD Digital'}})\" && npx electron-builder --win nsis --prepackaged output/win-unpacked",
+    "build:win": "electron-builder --win --publish=never && node -e \"require('rcedit').rcedit('output/win-unpacked/BMD HRMS.exe',{icon:'assets/iconbmd.ico','version-string':{CompanyName:'BMD Digital',FileDescription:'BMD HRMS Desktop App',ProductName:'BMD HRMS',LegalCopyright:'Copyright 2026 BMD Digital'}}).then(()=>console.log('Icon patched')).catch(e=>{console.error(e);process.exit(1)})\" && npx electron-builder --win nsis --prepackaged output/win-unpacked --publish=never",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },

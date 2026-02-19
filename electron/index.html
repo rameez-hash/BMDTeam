@@ -12,7 +12,7 @@
     /* ═══ TITLE BAR ═══ */
     .titlebar{display:flex;justify-content:space-between;align-items:center;padding:0 0 0 12px;height:36px;background:#0f1420;border-bottom:1px solid #1e293b;-webkit-app-region:drag}
     .titlebar-brand{display:flex;align-items:center;gap:6px}
-    .titlebar-brand img{height:20px;object-fit:contain}
+    .titlebar-brand img{height:20px;object-fit:contain;filter:brightness(0) invert(1)}
     .titlebar-right{display:flex;align-items:center;height:100%;-webkit-app-region:no-drag}
     .tb-btn{width:46px;height:100%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
     .tb-btn svg{width:11px;height:11px;stroke-width:1.5;fill:none}
@@ -34,7 +34,7 @@
     /* ═══ LOGIN ═══ */
     .login{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:linear-gradient(160deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);padding:40px}
     .login-logo{margin-bottom:28px;display:flex;align-items:center;gap:12px}
-    .login-logo img{height:36px}
+    .login-logo img{height:36px;filter:brightness(0) invert(1)}
     .login h2{font-size:20px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
     .login p{font-size:12px;color:#64748b;margin-bottom:28px}
     .fg{width:100%;max-width:320px;margin-bottom:14px}
@@ -365,7 +365,7 @@
   <div class="titlebar">
     <div class="titlebar-brand">
       <img src="assets/logo-rename.png" alt="BMD Digital">
-      <span style="font-size:9px;color:#475569;margin-left:2px">v1.3.0</span>
+      <span style="font-size:9px;color:#475569;margin-left:2px">v1.4.0</span>
     </div>
     <div class="titlebar-right">
       <button class="tb-btn tb-min" onclick="minimize()" title="Minimize">
