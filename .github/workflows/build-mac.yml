@@ -110,9 +110,19 @@ jobs:
 
       - name: Patch icon with rcedit
         working-directory: electron
+        shell: bash
         run: |
-          npx rcedit "output/win-unpacked/BMD HRMS.exe" --set-icon "assets/iconbmd.ico" --set-version-string CompanyName "BMD Digital" --set-version-string FileDescription "BMD HRMS Desktop App" --set-version-string ProductName "BMD HRMS"
-          echo "Icon patched"
+          node -e "
+          const rcedit = require('rcedit');
+          rcedit('output/win-unpacked/BMD HRMS.exe', {
+            icon: 'assets/iconbmd.ico',
+            'version-string': {
+              CompanyName: 'BMD Digital',
+              FileDescription: 'BMD HRMS Desktop App',
+              ProductName: 'BMD HRMS'
+            }
+          }).then(() => console.log('Icon patched')).catch(e => { console.error(e); process.exit(1); });
+          "
 
       - name: Rebuild NSIS from patched unpacked
         working-directory: electron
