@@ -10,6 +10,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
 import AttendanceCorrectionTab from './CorrectionTab';
 import AttendanceCalendar from './AttendanceCalendar';
+import AllEmployeesTable from './AllEmployeesTable';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 
 interface AttendanceBreak {
@@ -1121,6 +1122,18 @@ export default function AttendancePage() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* All Employees flat table — when no specific employee selected */}
+                {canViewOthers && !employeeFilter ? (
+                  <AllEmployeesTable
+                    records={recordsArray}
+                    onEdit={handleEditAttendance}
+                    onDelete={handleDeleteAttendance}
+                    canEdit={canManage}
+                    deleteLoadingId={deleteLoadingId}
+                    formatTimeStr={formatTimeStr}
+                    getStatusBadge={getStatusBadge}
+                  />
+                ) : (
                   <AttendanceCalendar
                     records={recordsArray}
                     startDate={startDate}
@@ -1142,6 +1155,7 @@ export default function AttendancePage() {
                     workDays={selectedShift?.workDays}
                     employeeJoiningDate={employeeFilter ? employees.find(e => e.id === employeeFilter)?.joiningDate : null}
                   />
+                )}
               </CardContent>
             </Card>
           </div>

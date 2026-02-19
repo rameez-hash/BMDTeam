@@ -342,7 +342,7 @@ export default function AttendanceCalendar({
             </span>
           </div>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="text-[11px] text-emerald-600/80 font-medium">{standardWorkHours}h/day</span>
+            <span className="text-[11px] text-emerald-600/80 font-medium">{formatWorkHours(standardWorkHours)}/day</span>
             <span className="text-[11px] text-emerald-600/80 font-medium">{breakDuration}m break</span>
             <span className="text-[11px] text-emerald-600/80 font-medium">{graceTime}m grace</span>
             <span className="text-[11px] text-emerald-600/80 font-medium">{earlyCheckInGrace}m early-in</span>
@@ -725,7 +725,7 @@ export default function AttendanceCalendar({
                           ● {fmtShiftTime(recShiftStart)} — {fmtShiftTime(recShiftEnd)}
                         </span>
                         <span className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600">
-                          {recStdHours}h/day
+                          {formatWorkHours(recStdHours)}/day
                         </span>
                         {record.shiftGraceTime != null && (
                           <span className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600">
