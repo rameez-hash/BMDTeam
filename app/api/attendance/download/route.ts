@@ -94,6 +94,8 @@ export async function GET(request: NextRequest) {
         lastName: true,
         department: { select: { name: true } },
         designation: true,
+        joiningDate: true,
+        attendanceStartDate: true,
         shift: {
           select: {
             name: true,
@@ -223,13 +225,17 @@ export async function GET(request: NextRequest) {
       const std = emp.shift?.standardWorkHours || 9;
       const csvGrace = emp.shift?.graceTime || 15;
       const empWorkDays = getWorkDays(emp.shift?.workDays);
+      const empEffectiveStart = emp.attendanceStartDate
+        ? new Date(emp.attendanceStartDate)
+        : emp.joiningDate ? new Date(emp.joiningDate) : null;
       for (const date of allDates) {
         const ds = formatDate(date);
         const rec = attendanceMap.get(`${emp.id}_${ds}`);
         const isWk = !empWorkDays.includes(date.getDay());
         const hName = holidayMap.get(ds);
+        const isBeforeStart = empEffectiveStart && date < empEffectiveStart;
         const dn = date.toLocaleDateString('en-US', { weekday: 'short' });
-        let st = 'ABSENT', ci = '-', co = '-', wh = '-', eh = '-', cis = '-', cos = '-', brk = '0', lt = 'No', lm = '0';
+        let st = isBeforeStart ? 'NOT_JOINED' : 'ABSENT', ci = '-', co = '-', wh = '-', eh = '-', cis = '-', cos = '-', brk = '0', lt = 'No', lm = '0';
         let brkDurStr = '-', locStr = '-';
         if (rec) {
           st = rec.status; ci = rec.checkIn ? formatTime(rec.checkIn) : '-';

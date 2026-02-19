@@ -98,6 +98,7 @@ export default function EditEmployeePage() {
     country: '',
     // Employment Details
     joiningDate: '',
+    attendanceStartDate: '',
     departmentId: '',
     designation: '',
     shiftId: '',
@@ -164,6 +165,7 @@ export default function EditEmployeePage() {
           postalCode: emp.postalCode || '',
           country: emp.country || '',
           joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
+          attendanceStartDate: emp.attendanceStartDate ? emp.attendanceStartDate.split('T')[0] : '',
           departmentId: emp.department?.id || '',
           designation: emp.designation || '',
           shiftId: emp.shift?.id || '',
@@ -665,6 +667,13 @@ export default function EditEmployeePage() {
                   value={formData.joiningDate}
                   onChange={handleChange}
                   required
+                />
+                <Input
+                  label="Attendance Start Date"
+                  type="date"
+                  name="attendanceStartDate"
+                  value={formData.attendanceStartDate}
+                  onChange={handleChange}
                 />
                 <Select
                   label="Department"

@@ -149,6 +149,7 @@ export async function GET(request: NextRequest) {
           lastName: true,
           employeeCode: true,
           joiningDate: true,
+          attendanceStartDate: true,
           department: { select: { name: true } },
           shift: { select: { workDays: true } },
         },
@@ -157,8 +158,10 @@ export async function GET(request: NextRequest) {
       // Generate weekend and holiday dates in the range per employee (respecting their shift workDays)
       for (const emp of allEmployees) {
         const empWorkDays = getWorkDays(emp.shift?.workDays);
-        // Start from joining date if later than range start
-        const empJoinDate = emp.joiningDate ? new Date(emp.joiningDate) : null;
+        // Use attendanceStartDate if set, otherwise fall back to joiningDate
+        const empJoinDate = emp.attendanceStartDate
+          ? new Date(emp.attendanceStartDate)
+          : emp.joiningDate ? new Date(emp.joiningDate) : null;
         
         // Generate NOT_JOINED records for dates before joining date
         if (empJoinDate && empJoinDate > start) {

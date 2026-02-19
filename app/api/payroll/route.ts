@@ -225,7 +225,10 @@ export async function POST(request: NextRequest) {
       const empWorkDays = getWorkDays(employee.shift?.workDays);
       
       // If employee joined mid-month, only count working days from joining date
-      const empJoinDate = employee.joiningDate ? new Date(employee.joiningDate) : null;
+      // Use attendanceStartDate if set (for when dashboard access was given later than joining)
+      const empJoinDate = employee.attendanceStartDate
+        ? new Date(employee.attendanceStartDate)
+        : employee.joiningDate ? new Date(employee.joiningDate) : null;
       const effectiveStart = empJoinDate && empJoinDate > start ? empJoinDate : start;
       
       // Calculate total working days from effective start (respecting joining date)

@@ -218,7 +218,7 @@ export async function PUT(
       'maritalStatus', 'bloodGroup', 'nationality', 'address', 'city',
       'state', 'country', 'zipCode', 'profileImage', 'departmentId',
       'designation', 'shiftId', 'reportingManagerId', 'joiningDate',
-      'confirmationDate', 'resignationDate', 'relievingDate',
+      'attendanceStartDate', 'confirmationDate', 'resignationDate', 'relievingDate',
       'employmentStatus', 'employmentType', 'probationMonths', 'probationEndDate',
       'noticePeriodMonths', 'noticePeriodEndDate', 'bankName', 'bankAccountNumber',
       'ifscCode', 'panNumber', 'branchAddress',
@@ -264,6 +264,7 @@ export async function PUT(
 
     const dateOfBirth = processDate(updateData.dateOfBirth);
     const joiningDate = processDate(updateData.joiningDate);
+    const attendanceStartDate = processDate(updateData.attendanceStartDate);
     const confirmationDate = processDate(updateData.confirmationDate);
     const resignationDate = processDate(updateData.resignationDate);
     const relievingDate = processDate(updateData.relievingDate);
@@ -271,12 +272,14 @@ export async function PUT(
     // Remove original date fields and add processed ones
     delete updateData.dateOfBirth;
     delete updateData.joiningDate;
+    delete updateData.attendanceStartDate;
     delete updateData.confirmationDate;
     delete updateData.resignationDate;
     delete updateData.relievingDate;
 
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
     if (joiningDate !== undefined) updateData.joiningDate = joiningDate;
+    if (attendanceStartDate !== undefined) updateData.attendanceStartDate = attendanceStartDate;
     if (confirmationDate !== undefined) updateData.confirmationDate = confirmationDate;
     if (resignationDate !== undefined) updateData.resignationDate = resignationDate;
     if (relievingDate !== undefined) updateData.relievingDate = relievingDate;

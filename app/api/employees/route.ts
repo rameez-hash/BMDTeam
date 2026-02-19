@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
       shiftId,
       reportingManagerId,
       joiningDate,
+      attendanceStartDate,
       employmentType,
       employmentStatus,
       probationPeriod, // in months
@@ -269,6 +270,7 @@ export async function POST(request: NextRequest) {
     };
 
     const parsedJoiningDate = parseDate(joiningDate);
+    const parsedAttendanceStartDate = parseDate(attendanceStartDate);
     const parsedDateOfBirth = parseDate(dateOfBirth);
 
     // Calculate confirmation date based on probation period
@@ -323,6 +325,7 @@ export async function POST(request: NextRequest) {
         designation: designation?.trim() || null,
         reportingManagerId: reportingManagerId || null,
         joiningDate: parsedJoiningDate,
+        attendanceStartDate: parsedAttendanceStartDate,
         confirmationDate: calculatedConfirmationDate,
         employmentType: employmentType || 'FULL_TIME',
         employmentStatus: employmentStatus || 'ACTIVE',

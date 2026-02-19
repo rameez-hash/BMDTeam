@@ -25,6 +25,7 @@ interface Employee {
   employmentStatus?: string;
   employmentType?: string;
   joiningDate?: string;
+  attendanceStartDate?: string;
   confirmationDate?: string;
   dateOfBirth?: string;
   gender?: string;
@@ -158,6 +159,7 @@ function EmployeesPageContent() {
     nic: '',
     // Employment Details
     joiningDate: '',
+    attendanceStartDate: '',
     departmentId: '',
     designation: '',
     shiftId: '',
@@ -498,6 +500,7 @@ function EmployeesPageContent() {
       nic: employee.nic || '',
       // Employment Details
       joiningDate: employee.joiningDate ? employee.joiningDate.split('T')[0] : '',
+      attendanceStartDate: employee.attendanceStartDate ? employee.attendanceStartDate.split('T')[0] : '',
       departmentId: employee.department?.id || '',
       designation: employee.designation || '',
       shiftId: employee.shift?.id || '',
@@ -1416,6 +1419,15 @@ function EmployeesPageContent() {
                     onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
                     required
                   />
+                  <Input
+                    label="Attendance Start Date"
+                    type="date"
+                    value={formData.attendanceStartDate}
+                    onChange={(e) => setFormData({ ...formData, attendanceStartDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Employment Type *"
                     value={formData.employmentType}

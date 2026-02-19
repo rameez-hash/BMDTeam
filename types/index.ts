@@ -75,6 +75,7 @@ export interface CreateEmployeeRequest {
   shiftId?: string;
   reportingManagerId?: string;
   joiningDate?: string;
+  attendanceStartDate?: string;
   employmentType?: EmploymentType;
   role?: Role;
   bankName?: string;
