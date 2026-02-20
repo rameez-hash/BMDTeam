@@ -74,8 +74,8 @@ export function getMonthRange(month: number, year: number): { start: Date; end: 
 
 export function calculateWorkHours(checkIn: Date, checkOut: Date, breakMinutes: number = 0): number {
   const totalMinutes = differenceInMinutes(checkOut, checkIn);
-  const workMinutes = totalMinutes - breakMinutes;
-  return Math.round((workMinutes / 60) * 100) / 100; // Round to 2 decimal places
+  // Break time counts as working hours — do NOT subtract breakMinutes
+  return Math.round((totalMinutes / 60) * 100) / 100; // Round to 2 decimal places
 }
 
 export function calculateOvertimeHours(workHours: number, standardHours: number = 8): number {
