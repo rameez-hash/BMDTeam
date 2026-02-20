@@ -515,7 +515,21 @@ function SettingsPageContent() {
                     <Input label="Late Grace (min)" type="number" value={shiftForm.graceTime} onChange={(e) => setShiftForm({ ...shiftForm, graceTime: parseInt(e.target.value) || 0 })} />
                     <Input label="Early Check-in Grace (min)" type="number" value={shiftForm.earlyCheckInGrace} onChange={(e) => setShiftForm({ ...shiftForm, earlyCheckInGrace: parseInt(e.target.value) || 0 })} hint="How early before shift start can check in" />
                     <Input label="Checkout Grace (min)" type="number" value={shiftForm.checkOutGrace} onChange={(e) => setShiftForm({ ...shiftForm, checkOutGrace: parseInt(e.target.value) || 0 })} hint="Grace after shift end for checkout" />
-                    <Input label="Standard Work Hours" type="number" value={shiftForm.standardWorkHours} onChange={(e) => setShiftForm({ ...shiftForm, standardWorkHours: parseFloat(e.target.value) || 0 })} hint="Full working hours for overtime calc" />
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Standard Work Hours</label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <input type="number" min="0" max="23" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Hours" value={Math.floor(shiftForm.standardWorkHours)} onChange={(e) => { const h = parseInt(e.target.value) || 0; const currentM = Math.round((shiftForm.standardWorkHours - Math.floor(shiftForm.standardWorkHours)) * 60); setShiftForm({ ...shiftForm, standardWorkHours: h + currentM / 60 }); }} />
+                          <span className="text-[10px] text-slate-400 mt-0.5 block text-center">Hours</span>
+                        </div>
+                        <span className="text-lg font-bold text-slate-400 mt-[-14px]">:</span>
+                        <div className="flex-1">
+                          <input type="number" min="0" max="59" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Minutes" value={Math.round((shiftForm.standardWorkHours - Math.floor(shiftForm.standardWorkHours)) * 60)} onChange={(e) => { const m = Math.min(59, parseInt(e.target.value) || 0); const currentH = Math.floor(shiftForm.standardWorkHours); setShiftForm({ ...shiftForm, standardWorkHours: currentH + m / 60 }); }} />
+                          <span className="text-[10px] text-slate-400 mt-0.5 block text-center">Minutes</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">Full working hours for overtime calc (e.g. 8h 30m)</p>
+                    </div>
                     <Input label="Min Check-in Gap (min)" type="number" value={shiftForm.minCheckInGap} onChange={(e) => setShiftForm({ ...shiftForm, minCheckInGap: parseInt(e.target.value) || 0 })} hint="Minimum gap after checkout (default 180 = 3hrs)" />
                     <Input label="Min Work Before Checkout (min)" type="number" value={shiftForm.minWorkMinutes} onChange={(e) => setShiftForm({ ...shiftForm, minWorkMinutes: parseInt(e.target.value) || 0 })} hint="Minimum minutes before checkout allowed (default 240 = 4hrs)" />
                     <Input label="Half Day Threshold (min)" type="number" value={shiftForm.halfDayThresholdMins} onChange={(e) => setShiftForm({ ...shiftForm, halfDayThresholdMins: parseInt(e.target.value) || 0 })} hint="Less than this = Half Day (default 240 = 4hrs)" />
@@ -578,7 +592,7 @@ function SettingsPageContent() {
                       <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap">
                         <span>Break: {s.breakDuration}m</span>
                         <span>Grace: {s.graceTime}m</span>
-                        <span>Std Hrs: {s.standardWorkHours ?? 9}h</span>
+                        <span>Std Hrs: {Math.floor(s.standardWorkHours ?? 9)}h {Math.round(((s.standardWorkHours ?? 9) - Math.floor(s.standardWorkHours ?? 9)) * 60)}m</span>
                         <span>Re-checkin Gap: {Math.floor((s.minCheckInGap ?? 180) / 60)}h {(s.minCheckInGap ?? 180) % 60}m</span>
                         <span>Min Work: {Math.floor((s.minWorkMinutes ?? 240) / 60)}h {(s.minWorkMinutes ?? 240) % 60}m</span>
                         {(s as any).autoHalfDay && <span className="text-amber-600 font-medium">Half Day &lt; {Math.floor(((s as any).halfDayThresholdMins ?? 240) / 60)}h {((s as any).halfDayThresholdMins ?? 240) % 60}m</span>}
