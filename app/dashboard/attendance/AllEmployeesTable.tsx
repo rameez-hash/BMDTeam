@@ -119,13 +119,13 @@ export default function AllEmployeesTable({
   const getOvertimeInfo = (record: AttendanceRecord) => {
     if (!record.workHours || !record.shiftStandardWorkHours) return null;
     const diff = record.workHours - record.shiftStandardWorkHours;
-    if (diff > 0.08) {
+    if (diff > 0.016) {
       const m = Math.round(diff * 60);
       const h = Math.floor(m / 60);
       const mins = m % 60;
       return { label: `+${h > 0 ? h + 'h ' : ''}${mins}m OT`, isOT: true };
     }
-    if (diff < -0.08) {
+    if (diff < -0.016) {
       const m = Math.round(Math.abs(diff) * 60);
       const h = Math.floor(m / 60);
       const mins = m % 60;

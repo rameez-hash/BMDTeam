@@ -201,8 +201,8 @@ export default function AttendanceCalendar({
     const std = empStdHours || standardWorkHours;
     if (!workHours) return { value: 0, label: '', isExtra: false };
     const diff = workHours - std;
-    if (diff > 0.08) return { value: diff, label: `${fmtExtraHrMin(diff)} OT`, isExtra: true };
-    if (diff < -0.08 && workHours > 0) return { value: diff, label: fmtExtraHrMin(diff), isExtra: false };
+    if (diff > 0.016) return { value: diff, label: `${fmtExtraHrMin(diff)} OT`, isExtra: true };
+    if (diff < -0.016 && workHours > 0) return { value: diff, label: fmtExtraHrMin(diff), isExtra: false };
     return { value: 0, label: 'Full', isExtra: false };
   };
 
