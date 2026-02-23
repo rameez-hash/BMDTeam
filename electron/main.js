@@ -128,6 +128,10 @@ ipcMain.on('open-dashboard', (_, path) => {
 });
 
 // ── Auto-update (A1: silent download → 5-min countdown → auto-restart) ──
+autoUpdater.setFeedURL({
+  provider: 'generic',
+  url: 'https://hrms.bmdhouse.com/api/desktop-update'
+});
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 let restartTimer = null;

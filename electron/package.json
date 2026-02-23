@@ -64,9 +64,8 @@
       "icon": "assets/icon.png"
     },
     "publish": {
-      "provider": "github",
-      "owner": "rameez-hash",
-      "repo": "BMDHRMS"
+      "provider": "generic",
+      "url": "https://hrms.bmdhouse.com/api/desktop-update"
     }
   }
 }
