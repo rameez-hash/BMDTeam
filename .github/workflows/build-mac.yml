@@ -77,15 +77,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DMG_FILE=$(ls output/*.dmg | head -1)
-          cp "$DMG_FILE" "output/BMD.HRMS-1.4.0.dmg"
+          cp "$DMG_FILE" "output/BMD.HRMS-1.5.0.dmg"
           
           # Create release if it doesn't exist
-          gh release view v1.4.0 --repo ${{ github.repository }} 2>/dev/null || \
-            gh release create v1.4.0 --repo ${{ github.repository }} --title "BMD HRMS v1.4.0" --notes "Desktop app v1.4.0 - Icon fix, logo fix, OT column fix"
+          gh release view v1.5.0 --repo ${{ github.repository }} 2>/dev/null || \
+            gh release create v1.5.0 --repo ${{ github.repository }} --title "BMD HRMS v1.5.0" --notes "Desktop app v1.5.0 - Auto-update, AM/PM shift time, avatar fix, checkout missing"
           
-          gh release upload v1.4.0 "output/BMD.HRMS-1.4.0.dmg" --repo ${{ github.repository }} --clobber
+          gh release upload v1.5.0 "output/BMD.HRMS-1.5.0.dmg" --repo ${{ github.repository }} --clobber
           echo "Mac DMG uploaded!"
-          gh release view v1.4.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
+          gh release view v1.5.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
 
   build-win:
     runs-on: windows-latest
@@ -139,12 +139,12 @@ jobs:
         shell: bash
         run: |
           EXE_FILE=$(ls output/*.exe | grep -i setup | head -1)
-          cp "$EXE_FILE" "output/BMD.HRMS.Setup.1.4.0.exe"
+          cp "$EXE_FILE" "output/BMD.HRMS.Setup.1.5.0.exe"
           
           # Create release if it doesn't exist
-          gh release view v1.4.0 --repo ${{ github.repository }} 2>/dev/null || \
-            gh release create v1.4.0 --repo ${{ github.repository }} --title "BMD HRMS v1.4.0" --notes "Desktop app v1.4.0 - Icon fix, logo fix, OT column fix"
+          gh release view v1.5.0 --repo ${{ github.repository }} 2>/dev/null || \
+            gh release create v1.5.0 --repo ${{ github.repository }} --title "BMD HRMS v1.5.0" --notes "Desktop app v1.5.0 - Auto-update, AM/PM shift time, avatar fix, checkout missing"
           
-          gh release upload v1.4.0 "output/BMD.HRMS.Setup.1.4.0.exe" --repo ${{ github.repository }} --clobber
+          gh release upload v1.5.0 "output/BMD.HRMS.Setup.1.5.0.exe" --repo ${{ github.repository }} --clobber
           echo "Windows installer uploaded!"
-          gh release view v1.4.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
+          gh release view v1.5.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'

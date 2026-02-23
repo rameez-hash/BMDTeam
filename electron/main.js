@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, Notification, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const Store = require('electron-store');
 
@@ -126,9 +127,44 @@ ipcMain.on('open-dashboard', (_, path) => {
   shell.openExternal(url);
 });
 
+// ── Auto-update (A1: silent download → 5-min countdown → auto-restart) ──
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+let restartTimer = null;
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info.version);
+  // Notify renderer to show countdown bar
+  if (mainWindow) {
+    mainWindow.webContents.send('update-ready', info.version);
+  }
+  // Auto-restart after 5 minutes
+  restartTimer = setTimeout(() => {
+    autoUpdater.quitAndInstall(false, true);
+  }, 5 * 60 * 1000);
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Auto-update error:', err);
+});
+
+// Let renderer request immediate restart
+ipcMain.on('install-update-now', () => {
+  if (restartTimer) clearTimeout(restartTimer);
+  autoUpdater.quitAndInstall(false, true);
+});
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  // Check for updates 3 seconds after launch
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(err => console.error('Update check failed:', err));
+  }, 3000);
 });
 
 app.on('window-all-closed', () => {

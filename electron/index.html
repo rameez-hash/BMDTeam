@@ -365,7 +365,7 @@
   <div class="titlebar">
     <div class="titlebar-brand">
       <img src="assets/logo-rename.png" alt="BMD Digital">
-      <span style="font-size:9px;color:#475569;margin-left:2px">v1.4.0</span>
+      <span style="font-size:9px;color:#475569;margin-left:2px">v1.5.0</span>
     </div>
     <div class="titlebar-right">
       <button class="tb-btn tb-min" onclick="minimize()" title="Minimize">
@@ -378,6 +378,12 @@
         <svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
       </button>
     </div>
+  </div>
+
+  <!-- Update notification bar -->
+  <div id="updateBar" style="display:none;background:linear-gradient(90deg,#2563eb,#7c3aed);color:#fff;font-size:12px;padding:6px 14px;text-align:center;cursor:default">
+    <span id="updateMsg">Update ready — restarting in <b id="updateCountdown">5:00</b></span>
+    <button onclick="ipcRenderer.send('install-update-now')" style="margin-left:12px;background:#fff;color:#2563eb;border:none;border-radius:4px;padding:2px 10px;font-size:11px;font-weight:600;cursor:pointer">Restart Now</button>
   </div>
 
   <div class="container">
@@ -795,11 +801,13 @@
         document.getElementById('phRole').textContent=user.role||'';
         document.getElementById('phDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
         var aw=document.getElementById('phAvatarWrap');
+        var ini=user.name.charAt(0).toUpperCase();
         if(user.profileImage){
           var imgSrc=user.profileImage.startsWith('http')?user.profileImage:apiUrl+user.profileImage;
-          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" crossorigin="anonymous" onerror="this.onerror=null;this.parentNode.innerHTML=\'<div class=\\\"ph-avatar-placeholder\\\">' +user.name.charAt(0).toUpperCase()+'</div>\'">';
+          aw.setAttribute('data-initial',ini);
+          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" crossorigin="anonymous" onerror="avatarFallback(this)">';
         }else{
-          aw.innerHTML='<div class="ph-avatar-placeholder">'+user.name.charAt(0).toUpperCase()+'</div>';
+          aw.innerHTML='<div class="ph-avatar-placeholder">'+ini+'</div>';
         }
       }
     }
@@ -828,8 +836,10 @@
           user.profileImage=emp.profileImage;
           await ipcRenderer.invoke('set-store','user',user);
           var aw=document.getElementById('phAvatarWrap');
+          var ini=user.name.charAt(0).toUpperCase();
           var imgSrc=user.profileImage.startsWith('http')?user.profileImage:apiUrl+user.profileImage;
-          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" crossorigin="anonymous" onerror="this.onerror=null;this.parentNode.innerHTML=\'<div class=\\\"ph-avatar-placeholder\\\">' +user.name.charAt(0).toUpperCase()+'</div>\'">';
+          aw.setAttribute('data-initial',ini);
+          aw.innerHTML='<img class="ph-avatar" src="'+imgSrc+'" alt="" crossorigin="anonymous" onerror="avatarFallback(this)">';
         }
       }}catch(e){}
     }
@@ -966,7 +976,7 @@
       if(!attendanceStatus)return;
       var st=attendanceStatus.status,ob=attendanceStatus.isOnBreak,ci=attendanceStatus.checkIn,co=attendanceStatus.checkOut,
         il=attendanceStatus.isLate,lm=attendanceStatus.lateMinutes,tb=attendanceStatus.totalBreakMinutes,sh=attendanceStatus.shift;
-      if(sh){document.getElementById('shiftBadge').style.display='flex';document.getElementById('shiftName').textContent=sh.name;document.getElementById('shiftTime').textContent=sh.startTime+' – '+sh.endTime}
+      if(sh){document.getElementById('shiftBadge').style.display='flex';document.getElementById('shiftName').textContent=sh.name;document.getElementById('shiftTime').textContent=fmtShiftTime(sh.startTime)+' – '+fmtShiftTime(sh.endTime)}
       var pill=document.getElementById('sPill'),txt=document.getElementById('sTxt');pill.className='pill ';
       if(ob){pill.className+='on-break';txt.textContent='On Break'}
       else if(st==='CHECKED_IN'){pill.className+='working';txt.textContent='Working'}
@@ -1144,10 +1154,24 @@
 
     // ─── Helpers ───
     function fmtTime(t){return new Date(t).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
+    function fmtShiftTime(t){var p=t.split(':').map(Number);var h=p[0],m=p[1];var ap=h>=12?'PM':'AM';return(h%12||12)+':'+String(m).padStart(2,'0')+' '+ap}
+    function avatarFallback(img){img.onerror=null;var c=img.parentNode.getAttribute('data-initial')||'?';img.parentNode.innerHTML='<div class="ph-avatar-placeholder">'+c+'</div>';}
     function timeAgo(d){var s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 
     // ─── Tray Actions ───
     ipcRenderer.on('quick-action',function(_,a){if(!token)return;switch(a){case'check-in':checkIn();break;case'check-out':checkOut();break;case'break-start':startBreak();break;case'break-end':endBreak();break}});
+
+    // ─── Auto-update countdown bar ───
+    ipcRenderer.on('update-ready',function(_,ver){
+      var bar=document.getElementById('updateBar');bar.style.display='block';
+      var secs=300;
+      var iv=setInterval(function(){
+        secs--;
+        if(secs<=0){clearInterval(iv);return;}
+        var m=Math.floor(secs/60),s=secs%60;
+        document.getElementById('updateCountdown').textContent=m+':'+String(s).padStart(2,'0');
+      },1000);
+    });
 
     // Auto-refresh every 2 minutes
     var lastRefreshTime=Date.now();
