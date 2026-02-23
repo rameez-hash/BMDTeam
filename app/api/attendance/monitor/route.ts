@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
         isLate: record.isLate,
         lateMinutes: record.lateMinutes,
         isOnBreak,
+        checkoutMissing: record.checkoutMissing,
         shiftName: record.shiftName,
         shiftStartTime: record.shiftStartTime,
         shiftEndTime: record.shiftEndTime,

@@ -528,6 +528,11 @@ export async function PUT(request: NextRequest) {
       updateData.workHours = parseFloat(workHours) || 0;
     }
 
+    // If admin is editing checkIn/checkOut/workHours, clear the checkoutMissing flag
+    if (checkIn !== undefined || checkOut !== undefined || workHours !== undefined) {
+      updateData.checkoutMissing = false;
+    }
+
     if (overtime !== undefined) {
       updateData.overtime = parseFloat(overtime) || 0;
     }

@@ -296,6 +296,7 @@ model Attendance {
   shiftGraceTime        Int?      @map("shift_grace_time") // Snapshot of late grace (minutes)
   shiftStandardWorkHours Float?   @map("shift_standard_work_hours") // Snapshot of standard work hours
   shiftWorkDays         Json?     @map("shift_work_days") // Snapshot of working days at check-in time
+  checkoutMissing Boolean         @default(false) @map("checkout_missing") // True when employee forgot to checkout (detected on next-day checkout)
   modifiedById    String?         @map("modified_by_id")
   modifiedAt      DateTime?       @map("modified_at")
   modifyReason    String?         @map("modify_reason") @db.Text

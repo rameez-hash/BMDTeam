@@ -271,7 +271,14 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/attendance/check-out', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      if (res.ok) { toast.success(data.message || 'Checked out!'); fetchAttendanceStatus(); fetchMonthlyStats(); }
+      if (res.ok) {
+        if (data.checkoutMissing) {
+          toast.error(data.message || 'Checkout marked as MISSED. Contact HR to correct.');
+        } else {
+          toast.success(data.message || 'Checked out!');
+        }
+        fetchAttendanceStatus(); fetchMonthlyStats();
+      }
       else toast.error(data.error || 'Check-out failed');
     } catch { toast.error('Failed to check out.'); } finally { setActionLoading(false); }
   };

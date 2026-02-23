@@ -18,6 +18,7 @@ interface AttendanceRecord {
   shiftStartTime?: string;
   shiftEndTime?: string;
   shiftStandardWorkHours?: number;
+  checkoutMissing?: boolean;
   breaks?: { id: string; startTime: string; endTime?: string; duration?: number; reason?: string }[];
   employee?: {
     id?: string;
@@ -62,6 +63,15 @@ export default function AllEmployeesTable({
     const [h, m] = t.split(':').map(Number);
     const ampm = h >= 12 ? 'PM' : 'AM';
     return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+  };
+
+  const formatMinutes = (minutes: number) => {
+    if (minutes === 0) return '0m';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
   };
 
   // Filter only actual records (not synthetic weekends/absents/upcoming/notjoined)
@@ -182,7 +192,7 @@ export default function AllEmployeesTable({
           <div className="text-center">
             <div className="text-sm text-slate-700">{formatTimeStr(record.checkIn)}</div>
             {record.isLate && (
-              <div className="text-[10px] text-rose-500 font-medium">{record.lateMinutes ? `${record.lateMinutes}m late` : 'Late'}</div>
+              <div className="text-[10px] text-rose-500 font-medium">{record.lateMinutes ? `${formatMinutes(record.lateMinutes)} late` : 'Late'}</div>
             )}
           </div>
 
@@ -216,11 +226,19 @@ export default function AllEmployeesTable({
 
           {/* Status */}
           <div className="text-center">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getStatusColor(record.status)}`}>
-              {record.status === 'PRESENT' ? 'Present' : record.status === 'HALF_DAY' ? 'Half Day' : record.status === 'ABSENT' ? 'Absent' : record.status === 'ON_LEAVE' ? 'Leave' : record.status.replace('_', ' ')}
-            </span>
-            {record.isLate && (record.status === 'PRESENT' || record.status === 'HALF_DAY') && (
-              <span className="ml-1 text-[9px] text-rose-500 font-bold">⚠</span>
+            {record.checkoutMissing ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-red-100 text-red-700 border-red-300">
+                ⚠ CO Missing
+              </span>
+            ) : (
+              <>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getStatusColor(record.status)}`}>
+                  {record.status === 'PRESENT' ? 'Present' : record.status === 'HALF_DAY' ? 'Half Day' : record.status === 'ABSENT' ? 'Absent' : record.status === 'ON_LEAVE' ? 'Leave' : record.status.replace('_', ' ')}
+                </span>
+                {record.isLate && (record.status === 'PRESENT' || record.status === 'HALF_DAY') && (
+                  <span className="ml-1 text-[9px] text-rose-500 font-bold">⚠</span>
+                )}
+              </>
             )}
           </div>
 

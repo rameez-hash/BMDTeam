@@ -13,6 +13,7 @@ interface AttRecord {
   lateMinutes?: number;
   workHours?: number | null;
   notes?: string | null;
+  checkoutMissing?: boolean;
   shiftStandardWorkHours?: number | null;
   shiftStartTime?: string | null;
   shiftEndTime?: string | null;
@@ -272,10 +273,16 @@ export default function MonthlyAttendanceList() {
                     )}
                   </div>
                   {!row.isFuture && (
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.bg} ${cfg.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /> {cfg.label}
-                      {rec?.isLate && effectiveStatus !== 'LATE' && <span className="ml-0.5">⚠</span>}
-                    </span>
+                    rec?.checkoutMissing ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-red-50 border-red-300 text-red-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> ⚠ CO Missing
+                      </span>
+                    ) : (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.bg} ${cfg.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /> {cfg.label}
+                        {rec?.isLate && effectiveStatus !== 'LATE' && <span className="ml-0.5">⚠</span>}
+                      </span>
+                    )
                   )}
                 </div>
 
@@ -364,13 +371,20 @@ export default function MonthlyAttendanceList() {
                 {/* Status Badge */}
                 <div className="hidden sm:flex justify-end">
                   {!row.isFuture && (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${cfg.bg} ${cfg.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                      {cfg.label}
-                      {rec?.isLate && (effectiveStatus === 'PRESENT' || effectiveStatus === 'HALF_DAY') && (
-                        <span className="text-red-500 ml-0.5">⚠ Late</span>
-                      )}
-                    </span>
+                    rec?.checkoutMissing ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border bg-red-50 border-red-300 text-red-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        ⚠ CO Missing
+                      </span>
+                    ) : (
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${cfg.bg} ${cfg.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                        {cfg.label}
+                        {rec?.isLate && (effectiveStatus === 'PRESENT' || effectiveStatus === 'HALF_DAY') && (
+                          <span className="text-red-500 ml-0.5">⚠ Late</span>
+                        )}
+                      </span>
+                    )
                   )}
                 </div>
               </div>

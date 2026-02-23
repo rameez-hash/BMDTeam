@@ -34,6 +34,7 @@ interface AttendanceRecord {
   shiftStandardWorkHours?: number;
   shiftBreakDuration?: number;
   shiftWorkDays?: number[];
+  checkoutMissing?: boolean;
   breaks?: AttendanceBreak[];
   employee?: {
     id?: string;
@@ -602,14 +603,23 @@ export default function AttendanceCalendar({
                 {/* Status */}
                 <div className="text-center">
                   <div className="flex flex-col items-center gap-0.5">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold border ${statusInfo.bg} ${statusInfo.border} ${statusInfo.color}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
-                      {statusInfo.label}
-                    </span>
-                    {(record.isLate || checkInStatus?.type === 'late') && (record.status === 'PRESENT' || record.status === 'HALF_DAY') && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-600 border border-rose-200">
-                        ⚠ Late
+                    {record.checkoutMissing ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold border bg-red-100 border-red-300 text-red-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        CO Missing
                       </span>
+                    ) : (
+                      <>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold border ${statusInfo.bg} ${statusInfo.border} ${statusInfo.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
+                          {statusInfo.label}
+                        </span>
+                        {(record.isLate || checkInStatus?.type === 'late') && (record.status === 'PRESENT' || record.status === 'HALF_DAY') && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-600 border border-rose-200">
+                            ⚠ Late
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
