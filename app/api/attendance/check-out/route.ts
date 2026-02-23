@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { formatDate, calculateWorkHours, calculateTotalBreakMinutes, isNightShift, getDateStringPKT, createDateFromPKT } from '@/lib/utils';
+import { formatDate, calculateWorkHours, calculateTotalBreakMinutes } from '@/lib/utils';
 import { notify, notifyMany, getUsersWithPermission } from '@/lib/notifications';
 
 // POST /api/attendance/check-out
@@ -67,49 +67,38 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Missed checkout detection ──
-    // If the current checkout time falls within 4 hours before the NEXT shift start,
-    // the employee likely forgot to checkout yesterday and is pressing it now before today's shift.
+    // If checkout happens more than (shiftHours + 6h) after check-in, it's a missed checkout.
+    // e.g. 8.3h shift + 6h = 14.3h max window. After that → missed.
     let isMissedCheckout = false;
-    if (employee.shift) {
-      const shiftStart = employee.shift.startTime; // e.g. "09:00"
-      const shiftEnd = employee.shift.endTime;     // e.g. "18:00"
-      const todayPKT = getDateStringPKT(now);
+    if (employee.shift && attendance.checkIn) {
+      const shiftHours = attendance.shiftStandardWorkHours || employee.shift.standardWorkHours || 9;
+      const maxCheckoutWindowHours = shiftHours + 6;
+      const hoursSinceCheckIn = (now.getTime() - attendance.checkIn.getTime()) / (1000 * 60 * 60);
       
-      // Build today's shift start as a PKT date
-      let nextShiftStart = createDateFromPKT(todayPKT, shiftStart);
-      
-      // For night shifts, if now is before shift end (after midnight portion), 
-      // "next" shift start is tonight, not this morning
-      const isNight = isNightShift(shiftStart, shiftEnd);
-      if (isNight) {
-        // Night shift e.g. 21:00-06:00 
-        // If now is in the morning (before shift end), next shift start is tonight (same calendar day)
-        // If now is in the evening, next shift start is today
-        // nextShiftStart is already set to today's 21:00, which is correct
-      }
-      
-      // If nextShiftStart is in the past, push it to tomorrow
-      if (nextShiftStart.getTime() <= now.getTime()) {
-        const tomorrowPKT = getDateStringPKT(new Date(now.getTime() + 24 * 60 * 60 * 1000));
-        nextShiftStart = createDateFromPKT(tomorrowPKT, shiftStart);
-      }
-      
-      const hoursUntilNextShift = (nextShiftStart.getTime() - now.getTime()) / (1000 * 60 * 60);
-      
-      // If checking out within 4 hours before next shift start → missed checkout
-      if (hoursUntilNextShift <= 4) {
+      if (hoursSinceCheckIn > maxCheckoutWindowHours) {
         isMissedCheckout = true;
       }
     }
 
-    // End any active break
+    // End any active break — cap at remaining quota
     const activeBreak = attendance.breaks.find(b => !b.endTime);
     if (activeBreak) {
+      const allowedBreakMinutes = attendance.shiftBreakDuration ?? employee.shift?.breakDuration ?? 60;
+      const usedClosed = attendance.breaks
+        .filter(b => b.id !== activeBreak.id && b.endTime)
+        .reduce((sum, b) => sum + Math.round((b.endTime!.getTime() - b.startTime.getTime()) / 60000), 0);
+      const remainingQuota = Math.max(0, allowedBreakMinutes - usedClosed);
+      const actualDuration = Math.round((now.getTime() - activeBreak.startTime.getTime()) / 60000);
+      const cappedDuration = Math.min(actualDuration, remainingQuota);
+      const effectiveEndTime = actualDuration > remainingQuota
+        ? new Date(activeBreak.startTime.getTime() + cappedDuration * 60000)
+        : now;
+
       await prisma.attendanceBreak.update({
         where: { id: activeBreak.id },
         data: {
-          endTime: now,
-          duration: Math.round((now.getTime() - activeBreak.startTime.getTime()) / 60000),
+          endTime: effectiveEndTime,
+          duration: cappedDuration,
         },
       });
     }
@@ -157,7 +146,7 @@ export async function POST(request: NextRequest) {
         overtime: isMissedCheckout ? 0 : overtime,
         checkoutMissing: isMissedCheckout,
         notes: isMissedCheckout
-          ? `Checkout missed — checked out ${Math.round(minutesWorked / 60)}h after check-in (near next shift). Contact HR to correct.`
+          ? `Checkout missed — checked out ${Math.round(minutesWorked / 60)}h after check-in (exceeded shift + 6h window). Contact HR to correct.`
           : (notes || attendance.notes),
         ...(newStatus && !isMissedCheckout && { status: newStatus }),
       },
@@ -171,7 +160,7 @@ export async function POST(request: NextRequest) {
       module: ActivityModules.ATTENDANCE,
       resourceId: attendance.id,
       description: isMissedCheckout
-        ? `${employee.firstName} ${employee.lastName} checkout missed for ${attendanceDate} — checked out near next shift start`
+        ? `${employee.firstName} ${employee.lastName} checkout missed for ${attendanceDate} — checked out ${Math.round(minutesWorked / 60)}h after check-in`
         : `${employee.firstName} ${employee.lastName} checked out for ${attendanceDate} (${workHours.toFixed(2)} hours worked)`,
       request,
     });

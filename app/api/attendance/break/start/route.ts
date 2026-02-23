@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
+import { calculateTotalBreakMinutes } from '@/lib/utils';
 
 // POST /api/attendance/break/start
 export async function POST(request: NextRequest) {
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest) {
 
     const employee = await prisma.employee.findFirst({
       where: { userId: user!.userId },
+      include: { shift: true },
     });
 
     if (!employee) {
@@ -54,6 +56,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Break quota check ──
+    const allowedBreakMinutes = attendance.shiftBreakDuration ?? employee.shift?.breakDuration ?? 60;
+    const usedBreakMinutes = calculateTotalBreakMinutes(
+      attendance.breaks.map(b => ({ startTime: b.startTime, endTime: b.endTime }))
+    );
+
+    if (usedBreakMinutes >= allowedBreakMinutes) {
+      return NextResponse.json(
+        { error: `Break quota finished (${usedBreakMinutes}m / ${allowedBreakMinutes}m used). No more breaks allowed today.` },
+        { status: 400 }
+      );
+    }
+
     // Start break
     const newBreak = await prisma.attendanceBreak.create({
       data: {
@@ -63,20 +78,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const remainingBreak = allowedBreakMinutes - usedBreakMinutes;
+
     // Log activity
     await logActivity({
       userId: user!.userId,
       action: ActivityActions.BREAK_START,
       module: ActivityModules.ATTENDANCE,
       resourceId: newBreak.id,
-      description: `${employee.firstName} ${employee.lastName} started break`,
+      description: `${employee.firstName} ${employee.lastName} started break (${remainingBreak}m remaining)`,
       request,
     });
 
     return NextResponse.json({
       success: true,
       data: newBreak,
-      message: 'Break started',
+      message: `Break started. ${remainingBreak}m remaining of ${allowedBreakMinutes}m quota.`,
+      remainingBreakMinutes: remainingBreak,
+      allowedBreakMinutes,
     });
   } catch (error) {
     console.error('Start break error:', error);

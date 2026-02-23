@@ -37,6 +37,34 @@ export async function GET(request: NextRequest) {
     });
 
     if (activeAttendance) {
+      // ── Auto-end break if quota exceeded ──
+      const openBreak = activeAttendance.breaks.find(b => !b.endTime);
+      if (openBreak) {
+        const allowedBreakMinutes = activeAttendance.shiftBreakDuration ?? employee.shift?.breakDuration ?? 60;
+        const usedClosed = calculateTotalBreakMinutes(
+          activeAttendance.breaks.filter(b => b.id !== openBreak.id).map(b => ({ startTime: b.startTime, endTime: b.endTime }))
+        );
+        const remainingQuota = Math.max(0, allowedBreakMinutes - usedClosed);
+        const currentBreakMinutes = Math.round((now.getTime() - openBreak.startTime.getTime()) / 60000);
+
+        if (currentBreakMinutes >= remainingQuota) {
+          // Auto-end this break at the quota limit
+          const cappedEnd = new Date(openBreak.startTime.getTime() + remainingQuota * 60000);
+          await prisma.attendanceBreak.update({
+            where: { id: openBreak.id },
+            data: { endTime: cappedEnd, duration: remainingQuota },
+          });
+          // Refresh breaks
+          const refreshed = await prisma.attendance.findUnique({
+            where: { id: activeAttendance.id },
+            include: { breaks: true },
+          });
+          if (refreshed) {
+            activeAttendance.breaks = refreshed.breaks;
+          }
+        }
+      }
+
       const isOnBreak = activeAttendance.breaks.some(b => !b.endTime);
       const totalBreakMinutes = calculateTotalBreakMinutes(
         activeAttendance.breaks.map(b => ({ startTime: b.startTime, endTime: b.endTime }))
