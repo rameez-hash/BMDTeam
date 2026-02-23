@@ -55,7 +55,7 @@ export function formatDateTime(date: Date | string): string {
 
 export function formatTime(date: Date | string): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
-  return format(d, 'HH:mm');
+  return format(d, 'hh:mm a');
 }
 
 export function getStartOfDay(date: Date): Date {
