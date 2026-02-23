@@ -11,6 +11,8 @@ interface AttendanceRecord {
   checkOut?: string;
   status: string;
   workHours?: number;
+  overtime?: number;
+  notes?: string;
   isLate?: boolean;
   lateMinutes?: number;
   workLocation?: string;
@@ -19,6 +21,9 @@ interface AttendanceRecord {
   shiftEndTime?: string;
   shiftStandardWorkHours?: number;
   checkoutMissing?: boolean;
+  modifiedAt?: string;
+  modifiedById?: string;
+  modifyReason?: string;
   breaks?: { id: string; startTime: string; endTime?: string; duration?: number; reason?: string }[];
   employee?: {
     id?: string;
@@ -240,6 +245,9 @@ export default function AllEmployeesTable({
                 )}
               </>
             )}
+            {record.modifiedAt && (
+              <span className="ml-1 text-[9px] text-amber-500 font-bold" title="Modified by admin">✏️</span>
+            )}
           </div>
 
           {/* Expand */}
@@ -291,6 +299,17 @@ export default function AllEmployeesTable({
                 </div>
               </div>
             </div>
+            {record.modifiedAt && (
+              <div className="mt-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+                <span className="text-amber-600 text-xs font-semibold">✏️ Modified</span>
+                <span className="text-[10px] text-amber-700">
+                  {new Date(record.modifiedAt).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}
+                </span>
+                {record.modifyReason && (
+                  <span className="text-[10px] text-amber-600 italic ml-1">— {record.modifyReason}</span>
+                )}
+              </div>
+            )}
             {canModify && (
               <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
                 <Button variant="secondary" className="text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs px-3 py-1" onClick={(e) => { e.stopPropagation(); onEdit?.(record); }}>
