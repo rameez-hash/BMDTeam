@@ -168,7 +168,9 @@ export default function LoginPage() {
         </div>
 
         {/* Desktop App Download */}
-        <div className="mt-3 flex justify-center gap-2">
+        <div className="mt-3 flex flex-col items-center gap-1">
+          <span className="text-[10px] text-slate-400">Desktop App v1.9.1</span>
+          <div className="flex gap-2">
           <a
             href="/api/download/desktop?platform=win"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
@@ -189,6 +191,7 @@ export default function LoginPage() {
             macOS
             <span className="text-[9px] text-slate-400 font-normal">(.dmg)</span>
           </a>
+          </div>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-3">

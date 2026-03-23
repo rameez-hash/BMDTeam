@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Role } from '@prisma/client';
 
 const JWT_SECRET = (process.env.JWT_SECRET || 'your-secret-key').trim();
-const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d').trim();
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '365d').trim();
 
 export interface TokenPayload {
   userId: string;

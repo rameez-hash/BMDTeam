@@ -6,6 +6,12 @@ import { useToast } from '../components/ui/Toast';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { useServerTime } from '../hooks/useServerTime';
+
+const TZ = 'Asia/Karachi';
+function tzHours(d: Date) { return parseInt(d.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: TZ })); }
+function tzMinutes(d: Date) { return parseInt(d.toLocaleString('en-US', { minute: 'numeric', timeZone: TZ })); }
+function tzSeconds(d: Date) { return parseInt(d.toLocaleString('en-US', { second: 'numeric', timeZone: TZ })); }
 
 interface DashboardStats {
   totalEmployees?: number;
@@ -65,6 +71,7 @@ export default function DashboardPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [checkInLocation, setCheckInLocation] = useState<'OFFICE' | 'REMOTE' | 'HYBRID'>('OFFICE');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const serverTime = useServerTime();
   const [workTimer, setWorkTimer] = useState('00:00:00');
   const [breakTimer, setBreakTimer] = useState('00:00');
   const workTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -83,9 +90,8 @@ export default function DashboardPage() {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR' || user?.role === 'MANAGER';
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    setCurrentTime(serverTime);
+  }, [serverTime]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -322,9 +328,9 @@ export default function DashboardPage() {
   /* ═══════════════ EMPLOYEE DASHBOARD ═══════════════ */
 
   // Clock hand angles
-  const hours = currentTime.getHours();
-  const mins = currentTime.getMinutes();
-  const secs = currentTime.getSeconds();
+  const hours = tzHours(currentTime);
+  const mins = tzMinutes(currentTime);
+  const secs = tzSeconds(currentTime);
   const secAngle = secs * 6;
   const minAngle = mins * 6 + secs * 0.1;
   const hourAngle = (hours % 12) * 30 + mins * 0.5;
@@ -342,7 +348,7 @@ export default function DashboardPage() {
               {greeting}, {user?.employee?.firstName || 'User'} <span className="inline-block animate-[wave_2s_ease-in-out_infinite]">👋</span>
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: TZ })}
             </p>
           </div>
           {attendanceStatus.shift && (
@@ -463,10 +469,10 @@ export default function DashboardPage() {
                   {/* Digital Time + Status */}
                   <div className="flex-1 min-w-0 text-center sm:text-left">
                     <p className="text-4xl sm:text-5xl font-bold font-mono tracking-wide" suppressHydrationWarning>
-                      {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ })}
                     </p>
                     <p className="text-slate-400 text-sm mt-1">
-                      {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                      {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: TZ })}
                     </p>
                     {/* Status Badge */}
                     <div className="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-2">
@@ -486,7 +492,7 @@ export default function DashboardPage() {
                         }`} />
                         {attendanceStatus.isOnBreak ? 'On Break' :
                          attendanceStatus.isCheckedIn && !attendanceStatus.isCheckedOut ? 'Working' :
-                         attendanceStatus.isCheckedOut ? `Checked Out${attendanceStatus.checkOutTime ? ' at ' + new Date(attendanceStatus.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}` : 'Not Checked In'}
+                         attendanceStatus.isCheckedOut ? `Checked Out${attendanceStatus.checkOutTime ? ' at ' + new Date(attendanceStatus.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: TZ }) : ''}` : 'Not Checked In'}
                       </span>
                       {attendanceStatus.isLate && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-300 ring-1 ring-red-500/30">
@@ -510,13 +516,13 @@ export default function DashboardPage() {
                         {attendanceStatus.checkInTime && (
                           <span className="inline-flex items-center gap-1.5">
                             <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14" /></svg>
-                            In: <span className="text-slate-300 font-medium">{new Date(attendanceStatus.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            In: <span className="text-slate-300 font-medium">{new Date(attendanceStatus.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ })}</span>
                           </span>
                         )}
                         {attendanceStatus.checkOutTime && (
                           <span className="inline-flex items-center gap-1.5">
                             <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
-                            Out: <span className="text-slate-300 font-medium">{new Date(attendanceStatus.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            Out: <span className="text-slate-300 font-medium">{new Date(attendanceStatus.checkOutTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ })}</span>
                           </span>
                         )}
                       </div>
@@ -668,7 +674,7 @@ export default function DashboardPage() {
                 const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
                 const dayNum = d.getDate();
                 const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-                const fmtTime = (t?: string) => t ? new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                const fmtTime = (t?: string) => t ? new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: TZ }) : '--:--';
                 const statusColor = r.status === 'PRESENT' ? 'bg-emerald-100 text-emerald-700' : r.status === 'HALF_DAY' ? 'bg-teal-100 text-teal-700' : r.status === 'ABSENT' ? 'bg-red-100 text-red-700' : r.status === 'WEEKEND' ? 'bg-orange-100 text-orange-600' : r.status === 'HOLIDAY' ? 'bg-blue-100 text-blue-700' : r.status === 'ON_LEAVE' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600';
                 const statusLabel = r.status === 'PRESENT' ? 'Present' : r.status === 'HALF_DAY' ? 'Half Day' : r.status === 'ABSENT' ? 'Absent' : r.status === 'WEEKEND' ? 'Weekend' : r.status === 'HOLIDAY' ? 'Holiday' : r.status === 'ON_LEAVE' ? 'Leave' : r.status;
                 const wh = r.workHours ? `${Math.floor(r.workHours)}h ${Math.round((r.workHours % 1) * 60)}m` : null;
@@ -721,7 +727,7 @@ export default function DashboardPage() {
             {greeting}, {user?.employee?.firstName || 'Admin'} <span className="inline-block animate-[wave_2s_ease-in-out_infinite]">👋</span>
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: TZ })}
           </p>
         </div>
         <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
@@ -729,7 +735,7 @@ export default function DashboardPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="font-mono font-semibold text-slate-700" suppressHydrationWarning>
-            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: TZ })}
           </span>
         </div>
       </div>
@@ -794,11 +800,11 @@ export default function DashboardPage() {
                   <div key={holiday.id || `holiday-${index}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
                     <div className="w-10 h-10 bg-amber-50 rounded-lg flex flex-col items-center justify-center flex-shrink-0 border border-amber-100">
                       <span className="text-xs font-bold text-amber-700 leading-none">{new Date(holiday.date).getDate()}</span>
-                      <span className="text-[9px] font-medium text-amber-500 leading-none mt-0.5">{new Date(holiday.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                      <span className="text-[9px] font-medium text-amber-500 leading-none mt-0.5">{new Date(holiday.date).toLocaleDateString('en-US', { month: 'short', timeZone: TZ })}</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-slate-800 truncate">{holiday.name}</p>
-                      <p className="text-[11px] text-slate-400">{new Date(holiday.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                      <p className="text-[11px] text-slate-400">{new Date(holiday.date).toLocaleDateString('en-US', { weekday: 'long', timeZone: TZ })}</p>
                     </div>
                   </div>
                 ))}

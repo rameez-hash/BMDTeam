@@ -60,11 +60,7 @@ export default function NotificationsPage() {
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-  // Auto-refresh every 10s for real-time count
-  useEffect(() => {
-    const interval = setInterval(fetchNotifications, 10000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  // No auto-refresh polling — notifications load on page visit and on user actions
 
   // Auto mark all as read when user visits notification page (after 2s)
   const hasAutoMarked = useRef(false);

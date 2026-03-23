@@ -66,8 +66,6 @@ export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifPopups, setNotifPopups] = useState<NotifPopup[]>([]);
-  const prevNotifIds = useRef<Set<string>>(new Set());
-  const isFirstFetch = useRef(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -106,8 +104,26 @@ export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
     }
   }, [dismissPopup, router]);
 
-  // Fetch notifications with real-time detection
+  // Fetch only unread count on mount (lightweight — just for red dot badge)
   useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/notifications?limit=1', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch {}
+    };
+    fetchUnreadCount();
+  }, []);
+
+  // Fetch full notifications only when dropdown is opened (click-based)
+  useEffect(() => {
+    if (!showNotifications) return;
     const fetchNotifications = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -116,53 +132,13 @@ export default function Header({ onMenuClick, user, onLogout }: HeaderProps) {
         });
         if (res.ok) {
           const data = await res.json();
-          const notifs = data.notifications || [];
-          const newCount = data.unreadCount || 0;
-
-          if (isFirstFetch.current) {
-            // First load: track IDs but don't popup
-            prevNotifIds.current = new Set(notifs.map((n: any) => n.id));
-            isFirstFetch.current = false;
-          } else {
-            // Subsequent polls: detect new notifications
-            const brandNew = notifs.filter((n: any) => !prevNotifIds.current.has(n.id) && !n.isRead);
-            if (brandNew.length > 0) {
-              // Play sound
-              playNotificationSound();
-
-              // Show popup for each new notification (max 3)
-              const popups: NotifPopup[] = brandNew.slice(0, 3).map((n: any) => ({
-                id: n.id,
-                title: n.title,
-                message: n.message,
-                type: n.type,
-                link: n.link,
-              }));
-              setNotifPopups(prev => [...prev, ...popups]);
-
-              // Auto-dismiss popups after 6 seconds
-              popups.forEach(p => {
-                setTimeout(() => {
-                  setNotifPopups(prev => prev.filter(pp => pp.id !== p.id));
-                }, 6000);
-              });
-
-              // Native browser/Electron notification for the latest
-              const latest = brandNew[0];
-              showNativeNotification(latest.title, latest.message);
-            }
-            prevNotifIds.current = new Set(notifs.map((n: any) => n.id));
-          }
-
-          setNotifications(notifs);
-          setUnreadCount(newCount);
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.unreadCount || 0);
         }
       } catch {}
     };
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000); // Poll every 10s for near real-time
-    return () => clearInterval(interval);
-  }, []);
+  }, [showNotifications]);
 
   const markAsRead = async (id: string, link?: string) => {
     try {

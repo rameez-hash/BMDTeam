@@ -8,6 +8,10 @@ export type AuthenticatedRequest = NextRequest & {
   user: AuthUser;
 };
 
+// In-memory auth cache (30s TTL) to avoid DB hit on every API call
+const authCache = new Map<string, { user: AuthUser; expiresAt: number }>();
+const AUTH_CACHE_TTL = 30_000; // 30 seconds
+
 export async function authenticate(
   request: NextRequest
 ): Promise<{ user: AuthUser | null; error: NextResponse | null }> {
@@ -35,6 +39,12 @@ export async function authenticate(
     };
   }
 
+  // Check cache first
+  const cached = authCache.get(payload.userId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { user: cached.user, error: null };
+  }
+
   // Get employee ID and department from database
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
@@ -42,6 +52,7 @@ export async function authenticate(
   });
 
   if (!user || !user.isActive) {
+    authCache.delete(payload.userId);
     return {
       user: null,
       error: NextResponse.json(
@@ -51,14 +62,16 @@ export async function authenticate(
     };
   }
 
-  return {
-    user: {
-      ...payload,
-      employeeDbId: user.employee?.id,
-      departmentId: user.employee?.departmentId || undefined,
-    },
-    error: null,
+  const authUser: AuthUser = {
+    ...payload,
+    employeeDbId: user.employee?.id,
+    departmentId: user.employee?.departmentId || undefined,
   };
+
+  // Cache the result
+  authCache.set(payload.userId, { user: authUser, expiresAt: Date.now() + AUTH_CACHE_TTL });
+
+  return { user: authUser, error: null };
 }
 
 // Legacy role-based checks (kept for backward compat, ADMIN always passes)

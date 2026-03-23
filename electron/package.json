@@ -1,6 +1,6 @@
 {
   "name": "hrms-desktop",
-  "version": "1.5.0",
+  "version": "1.9.1",
   "description": "HRMS Desktop Application - Attendance Tracking",
   "main": "main.js",
   "scripts": {
@@ -42,7 +42,7 @@
       "target": "nsis",
       "icon": "assets/iconbmd.ico",
       "signAndEditExecutable": false,
-      "publisherName": "BMD Digital"
+      "artifactName": "BMD-HRMS-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": true,

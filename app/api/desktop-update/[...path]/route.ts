@@ -1,22 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const GITHUB_REPO = 'rameez-hash/BMDHRMS';
 
-/**
- * Proxy for electron-updater (generic provider).
- * Serves latest.yml, exe, and blockmap from the LATEST GitHub release.
- * This lets a private repo work with auto-update without exposing tokens.
- *
- * electron-updater requests:
- *   GET /api/desktop-update/latest.yml
- *   GET /api/desktop-update/BMD-HRMS-Setup-x.x.x.exe
- *   GET /api/desktop-update/BMD-HRMS-Setup-x.x.x.exe.blockmap
- */
+async function getGitHubDownloadUrl(fileName: string, githubToken: string) {
+  const releasesRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=5`,
+    {
+      headers: {
+        Authorization: `token ${githubToken}`,
+        Accept: 'application/vnd.github+json',
+      },
+      cache: 'no-store',
+    }
+  );
+
+  if (!releasesRes.ok) return null;
+  const releases = await releasesRes.json();
+
+  let asset = null;
+  for (const rel of releases) {
+    asset = rel.assets?.find((a: { name: string }) => a.name === fileName);
+    if (asset) break;
+  }
+  if (!asset) return null;
+
+  const assetRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/releases/assets/${asset.id}`,
+    {
+      headers: {
+        Authorization: `token ${githubToken}`,
+        Accept: 'application/octet-stream',
+      },
+      redirect: 'manual',
+    }
+  );
+
+  const redirectUrl = assetRes.headers.get('location');
+  return { redirectUrl, size: asset.size };
+}
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
@@ -28,63 +55,66 @@ export async function GET(
   }
 
   try {
-    // Always fetch the LATEST release (no hardcoded tag needed)
-    const releaseRes = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-      {
-        headers: {
-          Authorization: `token ${githubToken}`,
-          Accept: 'application/vnd.github+json',
-        },
-        next: { revalidate: 300 }, // cache 5 min
-      }
-    );
-
-    if (!releaseRes.ok) {
-      return NextResponse.json({ error: 'Release not found' }, { status: 404 });
-    }
-
-    const release = await releaseRes.json();
-    const asset = release.assets?.find((a: { name: string }) => a.name === fileName);
-
-    if (!asset) {
+    const result = await getGitHubDownloadUrl(fileName, githubToken);
+    if (!result || !result.redirectUrl) {
       return NextResponse.json(
-        { error: `Asset "${fileName}" not found in release ${release.tag_name}` },
+        { error: `Asset "${fileName}" not found` },
         { status: 404 }
       );
     }
 
-    // Get the download redirect URL from GitHub
-    const assetRes = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/assets/${asset.id}`,
-      {
-        headers: {
-          Authorization: `token ${githubToken}`,
-          Accept: 'application/octet-stream',
-        },
-        redirect: 'manual',
-      }
-    );
+    const { redirectUrl, size } = result;
+    const isYml = fileName.endsWith('.yml');
+    const isExe = fileName.endsWith('.exe') && !fileName.endsWith('.blockmap');
 
-    const redirectUrl = assetRes.headers.get('location');
-    if (!redirectUrl) {
-      return NextResponse.json({ error: 'Download redirect failed' }, { status: 500 });
+    if (isExe) {
+      const rangeHeader = request.headers.get('range');
+
+      if (rangeHeader) {
+        const fileRes = await fetch(redirectUrl, {
+          headers: { Range: rangeHeader },
+        });
+
+        return new NextResponse(fileRes.body as ReadableStream, {
+          status: fileRes.status,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': fileRes.headers.get('content-length') || String(size),
+            'Content-Range': fileRes.headers.get('content-range') || '',
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      }
+
+      const fileRes = await fetch(redirectUrl);
+      if (!fileRes.ok || !fileRes.body) {
+        return NextResponse.json({ error: 'Download failed' }, { status: 502 });
+      }
+
+      return new NextResponse(fileRes.body as ReadableStream, {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': String(size),
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
     }
 
-    // Stream file content
     const fileRes = await fetch(redirectUrl);
     if (!fileRes.ok || !fileRes.body) {
       return NextResponse.json({ error: 'Download failed' }, { status: 502 });
     }
 
-    const isYml = fileName.endsWith('.yml');
     const contentType = isYml ? 'text/yaml; charset=utf-8' : 'application/octet-stream';
 
     return new NextResponse(fileRes.body as ReadableStream, {
       headers: {
         'Content-Type': contentType,
-        'Content-Length': String(asset.size),
+        'Content-Length': String(size),
         'Cache-Control': isYml ? 'no-cache' : 'public, max-age=3600',
+        'Accept-Ranges': 'bytes',
       },
     });
   } catch (err) {

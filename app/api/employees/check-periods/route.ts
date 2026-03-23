@@ -19,6 +19,13 @@ export async function GET(request: NextRequest) {
 
     const results = { probationExpired: 0, noticeExpired: 0, probationExpiring: 0, noticeExpiring: 0 };
 
+    // Fetch admin/HR users ONCE for all notifications below
+    const adminHR = await prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'HR'] }, isActive: true },
+      select: { id: true },
+    });
+    const adminHRIds = adminHR.map(u => u.id);
+
     // --- Probation Period Check ---
     // Find employees with PROBATION status whose probation has ended
     const probationExpired = await prisma.employee.findMany({
@@ -51,12 +58,8 @@ export async function GET(request: NextRequest) {
       });
 
       // Notify all admin/HR users
-      const adminHR = await prisma.user.findMany({
-        where: { role: { in: ['ADMIN', 'HR'] }, isActive: true },
-        select: { id: true },
-      });
       await notifyMany(
-        adminHR.map(u => u.id),
+        adminHRIds,
         {
           title: 'Probation Period Completed',
           message: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})'s probation period has ended. Please review and update their employment status.`,
@@ -101,12 +104,8 @@ export async function GET(request: NextRequest) {
         link: '/dashboard/profile',
       });
 
-      const adminHR = await prisma.user.findMany({
-        where: { role: { in: ['ADMIN', 'HR'] }, isActive: true },
-        select: { id: true },
-      });
       await notifyMany(
-        adminHR.map(u => u.id),
+        adminHRIds,
         {
           title: 'Probation Period Ending Soon',
           message: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})'s probation ends in ${daysLeft} day(s).`,
@@ -147,12 +146,8 @@ export async function GET(request: NextRequest) {
         link: '/dashboard/profile',
       });
 
-      const adminHR = await prisma.user.findMany({
-        where: { role: { in: ['ADMIN', 'HR'] }, isActive: true },
-        select: { id: true },
-      });
       await notifyMany(
-        adminHR.map(u => u.id),
+        adminHRIds,
         {
           title: 'Notice Period Completed',
           message: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})'s notice period has ended. Please process their relieving.`,
@@ -194,12 +189,8 @@ export async function GET(request: NextRequest) {
         link: '/dashboard/profile',
       });
 
-      const adminHR = await prisma.user.findMany({
-        where: { role: { in: ['ADMIN', 'HR'] }, isActive: true },
-        select: { id: true },
-      });
       await notifyMany(
-        adminHR.map(u => u.id),
+        adminHRIds,
         {
           title: 'Notice Period Ending Soon',
           message: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})'s notice period ends in ${daysLeft} day(s).`,

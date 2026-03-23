@@ -8,6 +8,9 @@ import { Input, Select } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
+import { useServerTime } from '../../hooks/useServerTime';
+
+const TZ = 'Asia/Karachi';
 import AttendanceCorrectionTab from './CorrectionTab';
 import AttendanceCalendar from './AttendanceCalendar';
 import AllEmployeesTable from './AllEmployeesTable';
@@ -140,6 +143,7 @@ export default function AttendancePage() {
 
   // Attendance tracker state
   const [currentTime, setCurrentTime] = useState(new Date());
+  const serverTime = useServerTime();
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>({
     isCheckedIn: false,
     isCheckedOut: false,
@@ -206,11 +210,10 @@ export default function AttendancePage() {
   const canManage = hasPermission('attendance', 'manage');
   const canCheckInOut = !!user?.employee;
 
-  // Update clock every second
+  // Update clock every second (from server time)
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+    setCurrentTime(serverTime);
+  }, [serverTime]);
 
   // ===== FETCH FUNCTIONS =====
 
@@ -709,8 +712,6 @@ export default function AttendancePage() {
           checkIn: editForm.checkIn ? new Date(editForm.checkIn).toISOString() : null,
           checkOut: editForm.checkOut ? new Date(editForm.checkOut).toISOString() : null,
           status: editForm.status,
-          isLate: editForm.isLate,
-          lateMinutes: editForm.lateMinutes,
           notes: editForm.notes,
           workLocation: editForm.workLocation,
           modifyReason: editForm.modifyReason,
@@ -795,7 +796,6 @@ export default function AttendancePage() {
           checkIn: addForm.checkIn ? new Date(addForm.checkIn).toISOString() : null,
           checkOut: addForm.checkOut ? new Date(addForm.checkOut).toISOString() : null,
           status: addForm.status,
-          isLate: addForm.isLate,
           workLocation: addForm.workLocation,
           notes: addForm.notes,
         }),
@@ -878,20 +878,17 @@ export default function AttendancePage() {
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status.replace('_', ' ')}</Badge>;
   };
 
-  // Convert a UTC date string to local "YYYY-MM-DDTHH:MM" for datetime-local inputs
+  // Convert a UTC date string to PKT "YYYY-MM-DDTHH:MM" for datetime-local inputs
   const toLocalDatetimeStr = (dateStr: string) => {
     const d = new Date(dateStr);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const h = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${y}-${m}-${day}T${h}:${min}`;
+    const parts = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ }).formatToParts(d);
+    const get = (t: string) => parts.find(p => p.type === t)?.value || '00';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
   };
 
   const formatTimeStr = (dateString?: string) => {
     if (!dateString) return '--:--:--';
-    return new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ });
   };
 
   const recordsArray = Array.isArray(records) ? records : [];
@@ -1204,7 +1201,7 @@ export default function AttendancePage() {
                   {corrections.map(c => {
                     const fmtTime = (iso?: string | null) => {
                       if (!iso) return null;
-                      try { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { return iso; }
+                      try { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: TZ }); } catch { return iso; }
                     };
                     return (
                       <div key={c.id} className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-md transition-all">

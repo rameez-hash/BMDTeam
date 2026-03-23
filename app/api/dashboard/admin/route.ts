@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       prisma.attendanceCorrection.count({ where: correctionFilter }),
     ]);
 
-    // Department stats
+    // Department stats - single query instead of N+1 loop
     const departments = await prisma.department.findMany({
       where: { isActive: true },
       include: {
@@ -73,24 +73,28 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const departmentStats = await Promise.all(
-      departments.map(async (dept: Department & { employees: { id: string }[] }) => {
-        const employeeIds = dept.employees.map((e: { id: string }) => e.id);
-        const presentCount = await prisma.attendance.count({
+    const deptEmployeeIds = departments.flatMap((d: Department & { employees: { id: string }[] }) => d.employees.map((e: { id: string }) => e.id));
+    const deptAttendance = deptEmployeeIds.length > 0
+      ? await prisma.attendance.findMany({
           where: {
             date: parseDateUTC(todayDate),
-            employeeId: { in: employeeIds },
+            employeeId: { in: deptEmployeeIds },
             status: { in: ['PRESENT', 'HALF_DAY'] },
           },
-        });
+          select: { employeeId: true },
+        })
+      : [];
 
-        return {
-          department: dept.name,
-          totalEmployees: employeeIds.length,
-          presentToday: presentCount,
-        };
-      })
-    );
+    const presentByEmployee = new Set(deptAttendance.map((a: { employeeId: string }) => a.employeeId));
+
+    const departmentStats = departments.map((dept: Department & { employees: { id: string }[] }) => {
+      const employeeIds = dept.employees.map((e: { id: string }) => e.id);
+      return {
+        department: dept.name,
+        totalEmployees: employeeIds.length,
+        presentToday: employeeIds.filter((id: string) => presentByEmployee.has(id)).length,
+      };
+    });
 
     // Recent activities
     const recentActivities = await prisma.activityLog.findMany({

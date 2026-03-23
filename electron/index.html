@@ -8,6 +8,12 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:#0b0f19;color:#e2e8f0;height:100vh;overflow:hidden;user-select:none;-webkit-font-smoothing:antialiased}
+    /* ═══ GLOBAL SCROLLBAR THEME ═══ */
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:#475569}
+    ::-webkit-scrollbar-corner{background:transparent}
 
     /* ═══ TITLE BAR ═══ */
     .titlebar{display:flex;justify-content:space-between;align-items:center;padding:0 0 0 12px;height:36px;background:#0f1420;border-bottom:1px solid #1e293b;-webkit-app-region:drag}
@@ -76,6 +82,38 @@
     .modal-success .check-circle svg{width:24px;height:24px;stroke:#34d399}
     .modal-success h4{font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:6px}
     .modal-success p{font-size:11px;color:#64748b;line-height:1.5;margin-bottom:16px}
+
+    /* ═══ CONFIRM MODAL ═══ */
+    .confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;align-items:center;justify-content:center}
+    .confirm-overlay.open{display:flex}
+    .confirm-box{background:#111827;border-radius:16px;border:1px solid #1e293b;width:340px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;animation:confirmIn .2s ease}
+    @keyframes confirmIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+    .confirm-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+    .confirm-icon svg{width:24px;height:24px}
+    .confirm-icon.ci-icon{background:rgba(52,211,153,.15)}
+    .confirm-icon.ci-icon svg{stroke:#34d399}
+    .confirm-icon.co-icon{background:rgba(239,68,68,.15)}
+    .confirm-icon.co-icon svg{stroke:#f87171}
+    .confirm-icon.bs-icon{background:rgba(251,191,36,.15)}
+    .confirm-icon.bs-icon svg{stroke:#fbbf24}
+    .confirm-icon.be-icon{background:rgba(251,191,36,.15)}
+    .confirm-icon.be-icon svg{stroke:#fbbf24}
+    .confirm-body{padding:24px 20px;text-align:center}
+    .confirm-body h3{font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+    .confirm-body p{font-size:12px;color:#64748b;margin-bottom:20px}
+    .confirm-actions{display:flex;gap:8px}
+    .confirm-actions button{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
+    .btn-conf-cancel{background:rgba(255,255,255,.06);border:1px solid #334155;color:#94a3b8}
+    .btn-conf-cancel:hover{background:rgba(255,255,255,.1)}
+    .btn-conf-yes{border:none;color:#0f172a}
+    .btn-conf-yes.ci-btn{background:linear-gradient(135deg,#34d399,#2dd4bf)}
+    .btn-conf-yes.ci-btn:hover{box-shadow:0 4px 16px rgba(52,211,153,.3)}
+    .btn-conf-yes.co-btn{background:linear-gradient(135deg,#ef4444,#f87171);color:#fff}
+    .btn-conf-yes.co-btn:hover{box-shadow:0 4px 16px rgba(239,68,68,.3)}
+    .btn-conf-yes.bs-btn{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+    .btn-conf-yes.bs-btn:hover{box-shadow:0 4px 16px rgba(251,191,36,.3)}
+    .btn-conf-yes.be-btn{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+    .btn-conf-yes.be-btn:hover{box-shadow:0 4px 16px rgba(251,191,36,.3)}
 
     /* ═══ DASHBOARD ═══ */
     .dash{display:none;padding-bottom:16px}
@@ -224,7 +262,23 @@
     .ann-type.general{background:rgba(255,255,255,.06);color:#94a3b8}
     .ann-title{font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:3px}
     .ann-body{font-size:10px;color:#64748b;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .ann-readmore{font-size:9px;color:#3b82f6;cursor:pointer;margin-top:4px;display:none;font-weight:500}
+    .ann-readmore:hover{color:#60a5fa;text-decoration:underline}
+    .ann-card{cursor:pointer}
     .ann-meta{font-size:9px;color:#475569;margin-top:6px;display:flex;align-items:center;gap:8px}
+    /* Announcement Detail Modal */
+    .ann-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;align-items:center;justify-content:center}
+    .ann-modal-overlay.open{display:flex}
+    .ann-modal{background:#111827;border:1px solid #1e293b;border-radius:14px;width:90%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .ann-modal-header{padding:16px 18px 12px;border-bottom:1px solid #1e293b;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .ann-modal-header h3{font-size:14px;font-weight:600;color:#e2e8f0;margin:0;flex:1}
+    .ann-modal-close{background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+    .ann-modal-close:hover{color:#e2e8f0}
+    .ann-modal-body{padding:14px 18px;overflow-y:auto;flex:1}
+    .ann-modal-body p{font-size:12px;color:#94a3b8;line-height:1.7;margin:0;white-space:pre-wrap;word-wrap:break-word}
+    .ann-modal-footer{padding:10px 18px 14px;border-top:1px solid #1e293b;display:flex;align-items:center;gap:10px}
+    .ann-modal-footer .ann-type{margin:0}
+    .ann-modal-footer .ann-meta{margin:0}
 
     /* ═══ HOLIDAYS ═══ */
     .hol-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#111827;border-radius:10px;border:1px solid #1e293b;margin-bottom:6px}
@@ -364,8 +418,8 @@
   <!-- Title Bar -->
   <div class="titlebar">
     <div class="titlebar-brand">
-      <img src="assets/logo-rename.png" alt="BMD Digital">
-      <span style="font-size:9px;color:#475569;margin-left:2px">v1.5.0</span>
+      <img src="assets/iconbmd.png" alt="BMD Digital">
+      <span style="font-size:9px;color:#475569;margin-left:2px">v1.9.1</span>
     </div>
     <div class="titlebar-right">
       <button class="tb-btn tb-min" onclick="minimize()" title="Minimize">
@@ -430,6 +484,38 @@
             <button class="btn-cancel" onclick="closeForgotModal()">Cancel</button>
             <button class="btn-send" id="forgotBtn" onclick="sendResetLink()">Send Reset Link</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CONFIRM ACTION MODAL ═══ -->
+    <div id="confirmModal" class="confirm-overlay" onclick="if(event.target===this)closeConfirm()">
+      <div class="confirm-box">
+        <div class="confirm-body">
+          <div id="confirmIcon" class="confirm-icon ci-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+          <h3 id="confirmTitle">Confirm Action</h3>
+          <p id="confirmMsg">Are you sure?</p>
+          <div class="confirm-actions">
+            <button class="btn-conf-cancel" onclick="closeConfirm()">Cancel</button>
+            <button class="btn-conf-yes ci-btn" id="confirmYes" onclick="confirmAction()">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ANNOUNCEMENT DETAIL MODAL ═══ -->
+    <div id="annModal" class="ann-modal-overlay" onclick="if(event.target===this)closeAnnouncement()">
+      <div class="ann-modal">
+        <div class="ann-modal-header">
+          <h3 id="annModalTitle">Announcement</h3>
+          <button class="ann-modal-close" onclick="closeAnnouncement()">&times;</button>
+        </div>
+        <div class="ann-modal-body">
+          <p id="annModalContent"></p>
+        </div>
+        <div class="ann-modal-footer">
+          <span class="ann-type" id="annModalType">General</span>
+          <span class="ann-meta" id="annModalMeta"></span>
         </div>
       </div>
     </div>
@@ -652,14 +738,35 @@
   <script>
     var ipcRenderer = require('electron').ipcRenderer;
     var apiUrl='https://hrms.bmdhouse.com',token=null,user=null,attendanceStatus=null,notifications=[];
+    var TZ='Asia/Karachi';
+    var serverTimeOffset=0; // ms difference: server - local
+    function serverNow(){return new Date(Date.now()+serverTimeOffset)}
+    function tzHours(d){return parseInt(d.toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:TZ}))}
+    function tzMinutes(d){return parseInt(d.toLocaleString('en-US',{minute:'numeric',timeZone:TZ}))}
+    function tzSeconds(d){return parseInt(d.toLocaleString('en-US',{second:'numeric',timeZone:TZ}))}
+    async function syncServerTime(){
+      try{var t1=Date.now();var r=await fetch(apiUrl+'/api/server-time');var d=await r.json();var t2=Date.now();
+        var roundTrip=(t2-t1)/2;var serverMs=new Date(d.serverTime).getTime();
+        serverTimeOffset=serverMs-(t1+roundTrip);
+        console.log('Server time offset:',serverTimeOffset,'ms');
+      }catch(e){console.error('Failed to sync server time:',e);serverTimeOffset=0}
+    }
 
     // ─── Init ───
     async function init(){
       apiUrl=await ipcRenderer.invoke('get-api-url');
       token=await ipcRenderer.invoke('get-store','token');
       user=await ipcRenderer.invoke('get-store','user');
+      await syncServerTime();
       renderClockMarkers(); startClock();
-      if(token&&user){showDashboard();fetchAll();}
+      if(token&&user){
+        // Refresh token on startup to keep it fresh
+        await refreshToken();
+        showDashboard();fetchAll();
+      }
+      // Re-sync every 10 minutes, refresh token every 6 hours
+      setInterval(syncServerTime,10*60*1000);
+      setInterval(function(){if(token)refreshToken()},6*60*60*1000);
     }
     function minimize(){ipcRenderer.send('minimize')}
     function closeWindow(){ipcRenderer.send('close')}
@@ -705,10 +812,10 @@
     }
     function startClock(){updateClock();setInterval(updateClock,1000)}
     function updateClock(){
-      var now=new Date(),h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
+      var now=serverNow(),h=tzHours(now),m=tzMinutes(now),s=tzSeconds(now);
       setHand('sH',s*6,65,-12);setHand('mH',m*6+s*.1,58,0);setHand('hH',(h%12)*30+m*.5,42,0);
-      document.getElementById('digiTime').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      document.getElementById('digiDate').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+      document.getElementById('digiTime').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:TZ});
+      document.getElementById('digiDate').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:TZ});
       if(attendanceStatus&&attendanceStatus.status==='CHECKED_IN')updateWorkTimer(now);
       if(attendanceStatus&&attendanceStatus.isOnBreak)updateBreakTimer(now);
     }
@@ -737,13 +844,34 @@
       else{bEl.textContent=totalSec+'s'}
     }
 
+    // ─── Token Refresh ───
+    async function refreshToken(){
+      if(!token)return false;
+      try{
+        var res=await fetch(apiUrl+'/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}});
+        var r=await res.json();
+        if(r.success&&r.token){token=r.token;await ipcRenderer.invoke('set-store','token',token);console.log('Token refreshed');return true}
+        return false;
+      }catch(e){console.error('Token refresh failed:',e);return false}
+    }
+
     // ─── API ───
     async function apiCall(ep,method,body){
       method=method||'GET';var headers={'Content-Type':'application/json'};
       if(token)headers['Authorization']='Bearer '+token;
       var opts={method:method,headers:headers};
       if(body)opts.body=JSON.stringify(body);
-      var res=await fetch(apiUrl+'/api'+ep,opts);return res.json();
+      var res=await fetch(apiUrl+'/api'+ep,opts);
+      // Auto-refresh on 401
+      if(res.status===401&&token){
+        var refreshed=await refreshToken();
+        if(refreshed){
+          headers['Authorization']='Bearer '+token;
+          opts.headers=headers;
+          res=await fetch(apiUrl+'/api'+ep,opts);
+        }else{logout();return{error:'Session expired. Please login again.'}}
+      }
+      return res.json();
     }
 
     // ─── Toggle Password Visibility ───
@@ -799,7 +927,7 @@
         document.getElementById('phName').textContent=user.name;
         document.getElementById('phDesignation').textContent=user.designation||'';
         document.getElementById('phRole').textContent=user.role||'';
-        document.getElementById('phDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+        document.getElementById('phDate').textContent=serverNow().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:TZ});
         var aw=document.getElementById('phAvatarWrap');
         var ini=user.name.charAt(0).toUpperCase();
         if(user.profileImage){
@@ -847,8 +975,8 @@
     // ─── Admin: Monthly Employee Attendance ───
     var allEmpAttData=[];
     var empAttFilter='all';
-    var eaMonth=new Date().getMonth();
-    var eaYear=new Date().getFullYear();
+    var eaMonth=serverNow().getMonth();
+    var eaYear=serverNow().getFullYear();
     var eaSelectedEmp='';
     var eaEmployeeList=[];
 
@@ -988,7 +1116,7 @@
       if(co){document.getElementById('outSpan').style.display='inline-flex';document.getElementById('outV').textContent=fmtTime(co)}else{document.getElementById('outSpan').style.display='none'}
       if(st!=='CHECKED_IN'){var wh=attendanceStatus.workHours||(attendanceStatus.currentWorkMinutes||0)/60;var whh=Math.floor(wh),wmm=Math.round((wh-whh)*60);document.getElementById('wtV').textContent=ci?String(whh).padStart(2,'0')+':'+String(wmm).padStart(2,'0')+':00':'00:00:00'}
       var bEl=document.getElementById('btV'),bLbl=document.getElementById('bLbl');
-      if(ob){bLbl.textContent='Break';bEl.classList.add('brk');if(attendanceStatus.breaks){var ab=attendanceStatus.breaks.find(function(b){return!b.endTime});if(ab){var bd=Math.floor((Date.now()-new Date(ab.startTime).getTime())/60000);bEl.textContent=bd>=60?Math.floor(bd/60)+'h '+bd%60+'m':bd+'m'}}}
+      if(ob){bLbl.textContent='Break';bEl.classList.add('brk');if(attendanceStatus.breaks){var ab=attendanceStatus.breaks.find(function(b){return!b.endTime});if(ab){var bd=Math.floor((serverNow().getTime()-new Date(ab.startTime).getTime())/60000);bEl.textContent=bd>=60?Math.floor(bd/60)+'h '+bd%60+'m':bd+'m'}}}
       else{bLbl.textContent='Total Break';bEl.classList.remove('brk');bEl.textContent=tb>0?(tb>=60?Math.floor(tb/60)+'h '+tb%60+'m':tb+'m'):'0m'}
       renderActions(st,ob,attendanceStatus.canCheckInAgain);
     }
@@ -1005,11 +1133,27 @@
       row.innerHTML=h;
     }
 
+    // ─── Confirm Modal ───
+    var pendingAction=null;
+    function showConfirm(type,title,msg,actionFn){
+      pendingAction=actionFn;
+      var modal=document.getElementById('confirmModal');
+      var icon=document.getElementById('confirmIcon');
+      var btn=document.getElementById('confirmYes');
+      document.getElementById('confirmTitle').textContent=title;
+      document.getElementById('confirmMsg').textContent=msg;
+      icon.className='confirm-icon '+type+'-icon';
+      btn.className='btn-conf-yes '+type+'-btn';
+      modal.classList.add('open');
+    }
+    function closeConfirm(){document.getElementById('confirmModal').classList.remove('open');pendingAction=null}
+    function confirmAction(){var fn=pendingAction;closeConfirm();if(fn)fn();}
+
     // ─── Actions ───
-    async function checkIn(){await doAction('/attendance/check-in','POST','Checked in!')}
-    async function checkOut(){await doAction('/attendance/check-out','POST','Checked out!')}
-    async function startBreak(){await doAction('/attendance/break/start','POST','Break started!')}
-    async function endBreak(){await doAction('/attendance/break/end','POST','Break ended!')}
+    function checkIn(){showConfirm('ci','Check In','Are you sure you want to Check In?',function(){doAction('/attendance/check-in','POST','Checked in!')})}
+    function checkOut(){showConfirm('co','Check Out','Are you sure you want to Check Out?',function(){doAction('/attendance/check-out','POST','Checked out!')})}
+    function startBreak(){showConfirm('bs','Start Break','Are you sure you want to Start Break?',function(){doAction('/attendance/break/start','POST','Break started!')})}
+    function endBreak(){showConfirm('be','End Break','Are you sure you want to End Break?',function(){doAction('/attendance/break/end','POST','Break ended!')})}
     async function doAction(ep,m,msg){
       var el=document.getElementById('actMsg');
       try{var r=await apiCall(ep,m);
@@ -1026,7 +1170,7 @@
 
     // ─── Monthly Stats ───
     async function fetchMonthly(){
-      try{var now=new Date(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
+      try{var now=serverNow(),y=now.getFullYear(),mo=String(now.getMonth()+1).padStart(2,'0');
         var ld=new Date(y,now.getMonth()+1,0).getDate();
         var empFilter=user&&user.employeeDbId?'&employeeId='+user.employeeDbId:'';
         var r=await apiCall('/attendance?startDate='+y+'-'+mo+'-01&endDate='+y+'-'+mo+'-'+String(ld).padStart(2,'0')+'&limit=100'+empFilter);
@@ -1121,18 +1265,43 @@
     document.addEventListener('click',function(e){var w=document.getElementById('notifWrap');if(w&&!w.contains(e.target))document.getElementById('notifPanel').classList.remove('open')});
 
     // ─── Announcements ───
+    var announcementsList=[];
+    function openAnnouncement(idx){
+      var a=announcementsList[idx];if(!a)return;
+      var typeClass='general';
+      if(a.type==='INFO'||a.type==='info')typeClass='info';
+      else if(a.type==='WARNING'||a.type==='warning')typeClass='warning';
+      else if(a.type==='URGENT'||a.type==='urgent')typeClass='urgent';
+      document.getElementById('annModalTitle').textContent=a.title||'Announcement';
+      document.getElementById('annModalContent').textContent=a.content||'';
+      var typeEl=document.getElementById('annModalType');
+      typeEl.textContent=a.type||'General';typeEl.className='ann-type '+typeClass;
+      var dateStr=a.publishDate?new Date(a.publishDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:TZ}):'';
+      var byStr=a.createdBy?a.createdBy.employee?a.createdBy.employee.firstName+' '+a.createdBy.employee.lastName:a.createdBy.email:'';
+      document.getElementById('annModalMeta').innerHTML=(dateStr?'<span>'+dateStr+'</span>':'')+(byStr?'<span>by '+byStr+'</span>':'');
+      document.getElementById('annModal').classList.add('open');
+    }
+    function closeAnnouncement(){document.getElementById('annModal').classList.remove('open')}
     async function fetchAnnouncements(){
       try{var r=await apiCall('/announcements');var data=r.data||r.announcements||r||[];var arr=Array.isArray(data)?data:[];
+        announcementsList=arr.slice(0,8);
         var el=document.getElementById('annList');
         if(!arr.length){el.innerHTML='<div class="empty">No announcements</div>';return}
-        el.innerHTML=arr.slice(0,8).map(function(a){
+        el.innerHTML=announcementsList.map(function(a,i){
           var typeClass='general';
           if(a.type==='INFO'||a.type==='info')typeClass='info';
           else if(a.type==='WARNING'||a.type==='warning')typeClass='warning';
           else if(a.type==='URGENT'||a.type==='urgent')typeClass='urgent';
-          var dateStr=a.publishDate?new Date(a.publishDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+          var dateStr=a.publishDate?new Date(a.publishDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:TZ}):'';
           var byStr=a.createdBy?a.createdBy.employee?a.createdBy.employee.firstName+' '+a.createdBy.employee.lastName:a.createdBy.email:'';
-          return '<div class="ann-card"><span class="ann-type '+typeClass+'">'+(a.type||'General')+'</span><div class="ann-title">'+a.title+'</div><div class="ann-body">'+(a.content||'')+'</div><div class="ann-meta">'+(dateStr?'<span>'+dateStr+'</span>':'')+(byStr?'<span>by '+byStr+'</span>':'')+'</div></div>'}).join('');
+          return '<div class="ann-card" onclick="openAnnouncement('+i+')"><span class="ann-type '+typeClass+'">'+(a.type||'General')+'</span><div class="ann-title">'+a.title+'</div><div class="ann-body" id="annBody'+i+'">'+(a.content||'')+'</div><div class="ann-readmore" id="annMore'+i+'">Read more...</div><div class="ann-meta">'+(dateStr?'<span>'+dateStr+'</span>':'')+(byStr?'<span>by '+byStr+'</span>':'')+'</div></div>'}).join('');
+        // Show "Read more" for announcements with enough content to be truncated
+        announcementsList.forEach(function(a,i){
+          if(a.content&&a.content.length>80){
+            var moreEl=document.getElementById('annMore'+i);
+            if(moreEl)moreEl.style.display='block';
+          }
+        });
       }catch(e){document.getElementById('annList').innerHTML='<div class="empty">Could not load</div>'}
     }
 
@@ -1140,7 +1309,7 @@
     async function fetchHolidays(){
       try{var r=await apiCall('/holidays');var data=r.data||r.holidays||r||[];var arr=Array.isArray(data)?data:[];
         var el=document.getElementById('holList');
-        var now=new Date();now.setHours(0,0,0,0);
+        var now=serverNow();now.setHours(0,0,0,0);
         // Show upcoming holidays (today + future)
         var upcoming=arr.filter(function(h){return new Date(h.date)>=now}).sort(function(a,b){return new Date(a.date)-new Date(b.date)}).slice(0,10);
         if(!upcoming.length){el.innerHTML='<div class="empty">No upcoming holidays</div>';return}
@@ -1153,10 +1322,10 @@
     }
 
     // ─── Helpers ───
-    function fmtTime(t){return new Date(t).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
+    function fmtTime(t){return new Date(t).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:TZ})}
     function fmtShiftTime(t){var p=t.split(':').map(Number);var h=p[0],m=p[1];var ap=h>=12?'PM':'AM';return(h%12||12)+':'+String(m).padStart(2,'0')+' '+ap}
     function avatarFallback(img){img.onerror=null;var c=img.parentNode.getAttribute('data-initial')||'?';img.parentNode.innerHTML='<div class="ph-avatar-placeholder">'+c+'</div>';}
-    function timeAgo(d){var s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+    function timeAgo(d){var s=Math.floor((serverNow().getTime()-d.getTime())/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 
     // ─── Tray Actions ───
     ipcRenderer.on('quick-action',function(_,a){if(!token)return;switch(a){case'check-in':checkIn();break;case'check-out':checkOut();break;case'break-start':startBreak();break;case'break-end':endBreak();break}});

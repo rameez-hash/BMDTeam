@@ -114,6 +114,10 @@ model Employee {
   pfContributions     PFContribution[]
   employeeHistory      EmployeeHistory[] @relation("EmployeeHistoryRecords")
   
+  @@index([employmentStatus])
+  @@index([departmentId])
+  @@index([reportingManagerId])
+  @@index([userId])
   @@map("employees")
 }
 
@@ -307,6 +311,8 @@ model Attendance {
   breaks          AttendanceBreak[]
   
   @@unique([employeeId, date])
+  @@index([date])
+  @@index([employeeId, status])
   @@map("attendance")
 }
 
@@ -353,6 +359,7 @@ model AttendanceCorrection {
   employee      Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   approvedBy    Employee?           @relation("ApprovedBy", fields: [approvedById], references: [id])
   
+  @@index([status])
   @@map("attendance_corrections")
 }
 
@@ -403,6 +410,8 @@ model LeaveRequest {
   leaveType     LeaveType     @relation(fields: [leaveTypeId], references: [id])
   approvedBy    Employee?     @relation("ApprovedBy", fields: [approvedById], references: [id])
   
+  @@index([employeeId, status])
+  @@index([status])
   @@map("leave_requests")
 }
 
@@ -758,6 +767,9 @@ model ActivityLog {
   
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  @@index([userId])
+  @@index([createdAt])
+  @@index([module])
   @@map("activity_logs")
 }
 // ==================== DOCUMENTS & CERTIFICATES ====================

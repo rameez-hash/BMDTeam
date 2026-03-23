@@ -7,6 +7,8 @@ const store = new Store();
 let mainWindow;
 let tray;
 
+app.setAppUserModelId('BMD Digital');
+
 // Always use Vercel production URL
 const API_URL = 'https://hrms.bmdhouse.com';
 
@@ -134,6 +136,7 @@ autoUpdater.setFeedURL({
 });
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.forceCodeSigning = false;
 let restartTimer = null;
 
 autoUpdater.on('update-available', (info) => {

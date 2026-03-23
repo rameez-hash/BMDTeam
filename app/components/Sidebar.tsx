@@ -297,10 +297,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     } catch {}
   }, [token]);
 
+  // Fetch unread count once on mount (no polling — saves DB queries)
   useEffect(() => {
     fetchNotifCount();
-    const interval = setInterval(fetchNotifCount, 30000);
-    return () => clearInterval(interval);
   }, [fetchNotifCount]);
 
   const filteredSections = menuSections.map(section => ({
