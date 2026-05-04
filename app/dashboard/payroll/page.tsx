@@ -93,6 +93,9 @@ const MONTHS = [
 
 const getMonthName = (m: number) => MONTHS[m - 1]?.label ?? '';
 
+/** Must match /api/payroll list cap so admin sees every employee for the month */
+const PAYROLL_LIST_LIMIT = '2000';
+
 export default function PayrollPage() {
   const { allowed, loading: permLoading } = useRequirePermission('payroll', 'view');
   if (permLoading) return null;
@@ -144,6 +147,7 @@ function PayrollPageContent() {
       const params = new URLSearchParams();
       params.append('month', month.toString());
       params.append('year', year.toString());
+      params.append('limit', PAYROLL_LIST_LIMIT);
       if (statusFilter) params.append('status', statusFilter);
       if (departmentFilter) params.append('departmentId', departmentFilter);
       const res = await fetch(`/api/payroll?${params}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -257,7 +261,7 @@ function PayrollPageContent() {
         toastRef.current.success('Deduction added');
         setNewDeduction({ label: '', amount: 0, reason: '' });
         await fetchDeductions(deductionPayrollId);
-        const updatedRes = await fetch(`/api/payroll?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } });
+        const updatedRes = await fetch(`/api/payroll?month=${month}&year=${year}&limit=${PAYROLL_LIST_LIMIT}`, { headers: { Authorization: `Bearer ${token}` } });
         if (updatedRes.ok) {
           const updatedData = await updatedRes.json();
           const updatedRecords: PayrollRecord[] = updatedData.data || [];
@@ -283,7 +287,7 @@ function PayrollPageContent() {
       if (res.ok) {
         toastRef.current.success('Removed');
         await fetchDeductions(deductionPayrollId);
-        const updatedRes = await fetch(`/api/payroll?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } });
+        const updatedRes = await fetch(`/api/payroll?month=${month}&year=${year}&limit=${PAYROLL_LIST_LIMIT}`, { headers: { Authorization: `Bearer ${token}` } });
         if (updatedRes.ok) {
           const updatedData = await updatedRes.json();
           const updatedRecords: PayrollRecord[] = updatedData.data || [];

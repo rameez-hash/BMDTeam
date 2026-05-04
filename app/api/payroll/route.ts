@@ -5,7 +5,17 @@ import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
-import { getPaginationParams, getMonthRange, getWorkingDaysInMonth, getWorkDays, calculateLateDeduction, calculateTax } from '@/lib/utils';
+import { getMonthRange, getWorkingDaysInMonth, getWorkDays, calculateLateDeduction, calculateTax } from '@/lib/utils';
+
+/** Payroll month view needs many rows; global getPaginationParams caps at 100. */
+function getPayrollListPagination(searchParams: URLSearchParams): { page: number; limit: number; skip: number } {
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const PAYROLL_MAX_LIMIT = 2000;
+  const parsed = parseInt(searchParams.get('limit') || '500', 10);
+  const limit = Math.min(PAYROLL_MAX_LIMIT, Math.max(1, Number.isFinite(parsed) && !Number.isNaN(parsed) ? parsed : 500));
+  const skip = (page - 1) * limit;
+  return { page, limit, skip };
+}
 import { notifyMany } from '@/lib/notifications';
 
 // GET /api/payroll - List payroll records
@@ -15,7 +25,7 @@ export async function GET(request: NextRequest) {
     if (error) return error;
 
     const searchParams = request.nextUrl.searchParams;
-    const { page, limit, skip } = getPaginationParams(searchParams);
+    const { page, limit, skip } = getPayrollListPagination(searchParams);
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const employeeId = searchParams.get('employeeId');
