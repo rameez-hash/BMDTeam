@@ -67,12 +67,12 @@ function generateBankDisbursementHTML(
     .map(
       (r) => `
     <tr>
-      <td>${String(r.no).padStart(2, '0')}</td>
-      <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.cnic)}</td>
-      <td>${escapeHtml(r.account)}</td>
-      <td class="amt">${formatAmount(r.amount)}</td>
-      <td>${escapeHtml(r.bank)}</td>
+      <td class="col-no">${String(r.no).padStart(2, '0')}</td>
+      <td class="col-name">${escapeHtml(r.name)}</td>
+      <td class="col-cnic">${escapeHtml(r.cnic)}</td>
+      <td class="col-acct">${escapeHtml(r.account)}</td>
+      <td class="col-amt">${formatAmount(r.amount)}</td>
+      <td class="col-bank">${escapeHtml(r.bank)}</td>
     </tr>`
     )
     .join('');
@@ -95,19 +95,23 @@ function generateBankDisbursementHTML(
   <style>
     @page {
       size: A4 portrait;
-      margin: 18mm 16mm 20mm 16mm;
+      margin: 15mm 18mm 18mm 18mm;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      width: 210mm;
       min-height: 297mm;
       font-family: Calibri, 'Segoe UI', Arial, sans-serif;
       font-size: 11pt;
       color: #000;
       background: #fff;
-      line-height: 1.35;
+      line-height: 1.4;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .screen-bar {
       display: flex;
@@ -130,20 +134,20 @@ function generateBankDisbursementHTML(
     }
     .page-sheet {
       position: relative;
-      width: 100%;
-      max-width: 178mm;
+      width: 174mm;
+      max-width: 174mm;
       margin: 0 auto;
-      min-height: 255mm;
-      overflow: hidden;
+      min-height: 260mm;
+      padding: 0 2mm;
     }
     .watermark {
       position: fixed;
-      top: 48%;
+      top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 320px;
-      height: 320px;
-      opacity: 0.06;
+      width: 340px;
+      height: 340px;
+      opacity: 0.055;
       z-index: 0;
       pointer-events: none;
       background-repeat: no-repeat;
@@ -152,78 +156,134 @@ function generateBankDisbursementHTML(
       ${watermarkStyle}
     }
     @media print {
-      .watermark {
-        position: fixed;
-        opacity: 0.07;
-      }
+      .watermark { opacity: 0.065; }
     }
     .letter-content {
       position: relative;
       z-index: 1;
+      width: 100%;
+      margin: 0 auto;
     }
     .letterhead {
       text-align: center;
-      margin-bottom: 16pt;
-      padding-bottom: 10pt;
-      border-bottom: 2pt solid #0f766e;
+      margin: 0 auto 18pt;
+      padding: 14pt 12pt 12pt;
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+      border: 1pt solid #e2e8f0;
+      border-radius: 2pt;
+    }
+    .letterhead-rule {
+      height: 3pt;
+      background: #0f766e;
+      margin: 10pt auto 0;
+      width: 100%;
+      max-width: 140mm;
+    }
+    .letterhead-rule-thin {
+      height: 0.5pt;
+      background: #94a3b8;
+      margin: 2pt auto 0;
+      width: 100%;
+      max-width: 140mm;
     }
     .header-logo {
-      height: 52px;
+      height: 56px;
       width: auto;
-      max-width: 200px;
+      max-width: 220px;
       object-fit: contain;
-      display: inline-block;
-      margin-bottom: 6pt;
+      display: block;
+      margin: 0 auto 8pt;
     }
     .letterhead-sub {
-      font-size: 8.5pt;
-      color: #475569;
-      letter-spacing: 0.14em;
+      font-size: 9pt;
+      color: #0f766e;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      margin-top: 2pt;
+      font-weight: 600;
     }
-    .date-to {
-      margin-bottom: 10pt;
+    .letter-body {
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 4mm;
     }
-    .to-block {
-      margin-bottom: 10pt;
-    }
+    .date-to { margin-bottom: 10pt; }
+    .to-block { margin-bottom: 8pt; }
     .to-block p { margin: 0; }
     .para {
       margin-bottom: 10pt;
-      text-align: left;
+      text-align: justify;
+      hyphens: auto;
+    }
+    .table-wrap {
+      width: 100%;
+      margin: 10pt auto 14pt;
+      overflow: visible;
     }
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 8pt 0 12pt;
-      font-size: 10pt;
-      table-layout: fixed;
+      font-size: 9.5pt;
+      table-layout: auto;
     }
     .data-table thead th {
       font-weight: 700;
       text-align: left;
-      padding: 0 4pt 4pt 0;
+      padding: 5pt 8pt 6pt 0;
       vertical-align: bottom;
       border: none;
-      border-bottom: 1pt solid #000;
+      border-bottom: 1.5pt solid #000;
+      white-space: nowrap;
+    }
+    .data-table thead th.col-amt-h {
+      text-align: right;
+      padding-right: 12pt;
+      padding-left: 12pt;
+    }
+    .data-table thead th.col-bank-h {
+      padding-left: 12pt;
+      min-width: 72pt;
     }
     .data-table tbody td {
-      padding: 3pt 4pt 3pt 0;
+      padding: 5pt 8pt 5pt 0;
       vertical-align: top;
       border: none;
+      line-height: 1.3;
+    }
+    .data-table .col-no {
+      width: 28pt;
+      padding-right: 6pt;
+      white-space: nowrap;
+    }
+    .data-table .col-name {
+      min-width: 72pt;
+      max-width: 95pt;
       word-wrap: break-word;
     }
-    .data-table col.col-no { width: 6%; }
-    .data-table col.col-name { width: 22%; }
-    .data-table col.col-cnic { width: 20%; }
-    .data-table col.col-acct { width: 20%; }
-    .data-table col.col-amt { width: 14%; }
-    .data-table col.col-bank { width: 18%; }
-    .data-table td.amt,
-    .data-table th:nth-child(5) {
+    .data-table .col-cnic {
+      min-width: 68pt;
+      max-width: 82pt;
+      word-break: break-all;
+      font-size: 9pt;
+    }
+    .data-table .col-acct {
+      min-width: 72pt;
+      max-width: 88pt;
+      word-break: break-all;
+      font-size: 9pt;
+    }
+    .data-table .col-amt {
       text-align: right;
-      padding-right: 0;
+      white-space: nowrap;
+      padding-left: 12pt;
+      padding-right: 12pt;
+      min-width: 52pt;
+      font-weight: 600;
+    }
+    .data-table .col-bank {
+      padding-left: 12pt;
+      min-width: 78pt;
+      max-width: 95pt;
+      word-wrap: break-word;
     }
     .signatory {
       margin-top: 10pt;
@@ -233,11 +293,13 @@ function generateBankDisbursementHTML(
     }
     .letter-footer {
       margin-top: 18pt;
-      padding-top: 12pt;
+      padding: 12pt 4mm 0;
       border-top: 1pt solid #cbd5e1;
       display: flex;
       align-items: flex-start;
-      gap: 12pt;
+      justify-content: center;
+      gap: 14pt;
+      max-width: 100%;
     }
     .footer-logo {
       height: 36px;
@@ -246,7 +308,10 @@ function generateBankDisbursementHTML(
       flex-shrink: 0;
       opacity: 0.9;
     }
-    .footer-text { flex: 1; }
+    .footer-text {
+      flex: 1;
+      text-align: left;
+    }
     .contact {
       font-size: 9.5pt;
       line-height: 1.45;
@@ -273,7 +338,10 @@ function generateBankDisbursementHTML(
     <header class="letterhead">
       ${headerLogo}
       <p class="letterhead-sub">Salary Disbursement Request</p>
+      <div class="letterhead-rule"></div>
+      <div class="letterhead-rule-thin"></div>
     </header>
+    <div class="letter-body">
     <p class="date-to">Date: ${dateStr} To,</p>
     <div class="to-block">
       <p>The Branch Manager</p>
@@ -284,29 +352,23 @@ function generateBankDisbursementHTML(
       below, for the month of ${monthName} ${year}. The total amount to be credited is Rs.${formatAmount(total)} and the
       details are as follows:
     </p>
+    <div class="table-wrap">
     <table class="data-table">
-      <colgroup>
-        <col class="col-no" />
-        <col class="col-name" />
-        <col class="col-cnic" />
-        <col class="col-acct" />
-        <col class="col-amt" />
-        <col class="col-bank" />
-      </colgroup>
       <thead>
         <tr>
-          <th>No</th>
-          <th>Employee Name</th>
-          <th>CNIC</th>
-          <th>Account Number</th>
-          <th>Amount</th>
-          <th>Bank</th>
+          <th class="col-no">No</th>
+          <th class="col-name">Employee Name</th>
+          <th class="col-cnic">CNIC</th>
+          <th class="col-acct">Account Number</th>
+          <th class="col-amt-h">Amount</th>
+          <th class="col-bank-h">Bank</th>
         </tr>
       </thead>
       <tbody>
         ${tableRows}
       </tbody>
     </table>
+    </div>
     <p class="para">
       We confirm that sufficient funds have been maintained in our account to cover the total
       disbursement amount.
@@ -316,6 +378,7 @@ function generateBankDisbursementHTML(
       convenience.
     </p>
     <p class="signatory">${COMPANY.name}</p>
+    </div>
     <div class="letter-footer">
       ${footerLogo}
       <div class="footer-text">
