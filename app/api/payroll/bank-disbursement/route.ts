@@ -4,6 +4,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
+import fs from 'fs';
+import path from 'path';
+
+function getLogoBase64(): string {
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'logo-rename.png');
+    const buf = fs.readFileSync(logoPath);
+    return 'data:image/png;base64,' + buf.toString('base64');
+  } catch {
+    return '';
+  }
+}
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -25,9 +37,9 @@ function formatAmount(amount: number) {
 
 function formatLetterDate(d = new Date()) {
   const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return `${day}-${month}-${year}`;
+  return `${day}-${m}-${year}`;
 }
 
 function escapeHtml(s: string) {
@@ -44,7 +56,8 @@ function generateBankDisbursementHTML(
     account: string;
     amount: number;
     bank: string;
-  }[]
+  }[],
+  logoBase64: string
 ) {
   const monthName = MONTH_NAMES[month - 1];
   const total = rows.reduce((s, r) => s + r.amount, 0);
@@ -54,15 +67,25 @@ function generateBankDisbursementHTML(
     .map(
       (r) => `
     <tr>
-      <td class="c-no">${r.no}</td>
-      <td class="c-name">${escapeHtml(r.name)}</td>
-      <td class="c-cnic">${escapeHtml(r.cnic)}</td>
-      <td class="c-acct">${escapeHtml(r.account)}</td>
-      <td class="c-amt">${formatAmount(r.amount)}</td>
-      <td class="c-bank">${escapeHtml(r.bank)}</td>
+      <td>${String(r.no).padStart(2, '0')}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.cnic)}</td>
+      <td>${escapeHtml(r.account)}</td>
+      <td class="amt">${formatAmount(r.amount)}</td>
+      <td>${escapeHtml(r.bank)}</td>
     </tr>`
     )
     .join('');
+
+  const watermarkStyle = logoBase64
+    ? `background-image: url('${logoBase64}');`
+    : '';
+  const headerLogo = logoBase64
+    ? `<img src="${logoBase64}" alt="BMD Digital" class="header-logo" />`
+    : '';
+  const footerLogo = logoBase64
+    ? `<img src="${logoBase64}" alt="" class="footer-logo" />`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -70,112 +93,238 @@ function generateBankDisbursementHTML(
   <meta charset="utf-8">
   <title>Salary Disbursement - ${monthName} ${year}</title>
   <style>
-    @page { size: A4; margin: 14mm 12mm; }
+    @page {
+      size: A4 portrait;
+      margin: 18mm 16mm 20mm 16mm;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
+    html, body {
+      width: 210mm;
+      min-height: 297mm;
+      font-family: Calibri, 'Segoe UI', Arial, sans-serif;
       font-size: 11pt;
       color: #000;
       background: #fff;
-      line-height: 1.45;
+      line-height: 1.35;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .page { max-width: 210mm; margin: 0 auto; padding: 8px 4px 24px; }
-    .action-bar {
-      display: flex; justify-content: center; padding: 10px;
-      background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
-      margin-bottom: 12px;
+    .screen-bar {
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      background: #f1f5f9;
+      border-bottom: 1px solid #ddd;
     }
-    @media print { .action-bar { display: none !important; } body { padding: 0; } }
-    .btn {
-      padding: 8px 22px; background: #0f766e; color: #fff; border: none;
-      border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+    @media print {
+      .screen-bar { display: none !important; }
+      html, body { width: auto; min-height: auto; }
     }
-    .date-line { margin-bottom: 14px; }
-    .salutation { margin-bottom: 12px; }
-    .body-text { margin-bottom: 14px; text-align: justify; }
-    table {
+    .screen-bar button {
+      padding: 8px 24px;
+      background: #0f766e;
+      color: #fff;
+      border: none;
+      font-size: 12pt;
+      cursor: pointer;
+    }
+    .page-sheet {
+      position: relative;
+      width: 100%;
+      max-width: 178mm;
+      margin: 0 auto;
+      min-height: 255mm;
+      overflow: hidden;
+    }
+    .watermark {
+      position: fixed;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      height: 320px;
+      opacity: 0.06;
+      z-index: 0;
+      pointer-events: none;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      ${watermarkStyle}
+    }
+    @media print {
+      .watermark {
+        position: fixed;
+        opacity: 0.07;
+      }
+    }
+    .letter-content {
+      position: relative;
+      z-index: 1;
+    }
+    .letterhead {
+      text-align: center;
+      margin-bottom: 16pt;
+      padding-bottom: 10pt;
+      border-bottom: 2pt solid #0f766e;
+    }
+    .header-logo {
+      height: 52px;
+      width: auto;
+      max-width: 200px;
+      object-fit: contain;
+      display: inline-block;
+      margin-bottom: 6pt;
+    }
+    .letterhead-sub {
+      font-size: 8.5pt;
+      color: #475569;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-top: 2pt;
+    }
+    .date-to {
+      margin-bottom: 10pt;
+    }
+    .to-block {
+      margin-bottom: 10pt;
+    }
+    .to-block p { margin: 0; }
+    .para {
+      margin-bottom: 10pt;
+      text-align: left;
+    }
+    .data-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 12px 0 16px;
-      font-size: 9.5pt;
+      margin: 8pt 0 12pt;
+      font-size: 10pt;
+      table-layout: fixed;
     }
-    th, td {
-      border: 1px solid #000;
-      padding: 5px 6px;
-      vertical-align: top;
-    }
-    th {
+    .data-table thead th {
       font-weight: 700;
       text-align: left;
-      background: #fff;
+      padding: 0 4pt 4pt 0;
+      vertical-align: bottom;
+      border: none;
+      border-bottom: 1pt solid #000;
     }
-    .c-no { width: 28px; text-align: center; }
-    .c-name { min-width: 120px; }
-    .c-cnic { min-width: 110px; }
-    .c-acct { min-width: 100px; }
-    .c-amt { text-align: right; white-space: nowrap; }
-    .c-bank { min-width: 80px; }
-    .closing { margin-top: 14px; margin-bottom: 20px; }
-    .sign-off { margin-top: 8px; font-weight: 600; }
-    .footer {
-      margin-top: 28px;
-      padding-top: 10px;
-      border-top: 1px solid #ccc;
-      font-size: 9pt;
-      line-height: 1.5;
+    .data-table tbody td {
+      padding: 3pt 4pt 3pt 0;
+      vertical-align: top;
+      border: none;
+      word-wrap: break-word;
+    }
+    .data-table col.col-no { width: 6%; }
+    .data-table col.col-name { width: 22%; }
+    .data-table col.col-cnic { width: 20%; }
+    .data-table col.col-acct { width: 20%; }
+    .data-table col.col-amt { width: 14%; }
+    .data-table col.col-bank { width: 18%; }
+    .data-table td.amt,
+    .data-table th:nth-child(5) {
+      text-align: right;
+      padding-right: 0;
+    }
+    .signatory {
+      margin-top: 10pt;
+      margin-bottom: 14pt;
+      font-weight: 600;
+      color: #0f766e;
+    }
+    .letter-footer {
+      margin-top: 18pt;
+      padding-top: 12pt;
+      border-top: 1pt solid #cbd5e1;
+      display: flex;
+      align-items: flex-start;
+      gap: 12pt;
+    }
+    .footer-logo {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+      flex-shrink: 0;
+      opacity: 0.9;
+    }
+    .footer-text { flex: 1; }
+    .contact {
+      font-size: 9.5pt;
+      line-height: 1.45;
+      margin-bottom: 2pt;
+      color: #334155;
     }
     .doc-title {
-      margin-top: 32px;
+      margin-top: 28pt;
       text-align: center;
-      font-size: 13pt;
+      font-size: 12pt;
       font-weight: 700;
-      letter-spacing: 0.02em;
+      color: #0f172a;
+      letter-spacing: 0.03em;
     }
   </style>
 </head>
 <body>
-  <div class="action-bar">
-    <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+  <div class="screen-bar">
+    <button type="button" onclick="window.print()">Print / Save as PDF</button>
   </div>
-  <div class="page">
-    <p class="date-line"><strong>Date:</strong> ${dateStr}</p>
-    <p class="salutation">To,<br>The Branch Manager<br>Dear Sir/Madam,</p>
-    <p class="body-text">
+  <div class="page-sheet">
+    ${logoBase64 ? '<div class="watermark" aria-hidden="true"></div>' : ''}
+    <div class="letter-content">
+    <header class="letterhead">
+      ${headerLogo}
+      <p class="letterhead-sub">Salary Disbursement Request</p>
+    </header>
+    <p class="date-to">Date: ${dateStr} To,</p>
+    <div class="to-block">
+      <p>The Branch Manager</p>
+    </div>
+    <p class="to-block">Dear Sir/Madam,</p>
+    <p class="para">
       We request you to kindly disburse the salaries of our employees as per the details mentioned
-      below, for the month of <strong>${monthName} ${year}</strong>. The total amount to be credited is
-      <strong>Rs.${formatAmount(total)}</strong> and the details are as follows:
+      below, for the month of ${monthName} ${year}. The total amount to be credited is Rs.${formatAmount(total)} and the
+      details are as follows:
     </p>
-    <table>
+    <table class="data-table">
+      <colgroup>
+        <col class="col-no" />
+        <col class="col-name" />
+        <col class="col-cnic" />
+        <col class="col-acct" />
+        <col class="col-amt" />
+        <col class="col-bank" />
+      </colgroup>
       <thead>
         <tr>
-          <th class="c-no">No</th>
-          <th class="c-name">Employee Name</th>
-          <th class="c-cnic">CNIC</th>
-          <th class="c-acct">Account Number</th>
-          <th class="c-amt">Amount</th>
-          <th class="c-bank">Bank</th>
+          <th>No</th>
+          <th>Employee Name</th>
+          <th>CNIC</th>
+          <th>Account Number</th>
+          <th>Amount</th>
+          <th>Bank</th>
         </tr>
       </thead>
       <tbody>
         ${tableRows}
       </tbody>
     </table>
-    <p class="body-text">
+    <p class="para">
       We confirm that sufficient funds have been maintained in our account to cover the total
       disbursement amount.
     </p>
-    <p class="body-text">
+    <p class="para">
       Kindly process the salary credits to the respective employee accounts at your earliest
       convenience.
     </p>
-    <p class="sign-off">${COMPANY.name}</p>
-    <div class="footer">
-      ${COMPANY.phone} | ${COMPANY.email} | ${COMPANY.website}<br>
-      ${COMPANY.address}
+    <p class="signatory">${COMPANY.name}</p>
+    <div class="letter-footer">
+      ${footerLogo}
+      <div class="footer-text">
+        <p class="contact">${COMPANY.phone} | ${COMPANY.email} | ${COMPANY.website}</p>
+        <p class="contact">${COMPANY.address}</p>
+      </div>
     </div>
     <p class="doc-title">Request for Salary Disbursement</p>
+    </div>
   </div>
 </body>
 </html>`;
@@ -238,13 +387,14 @@ export async function GET(request: NextRequest) {
     const rows = records.map((r, index) => ({
       no: index + 1,
       name: `${r.employee.firstName} ${r.employee.lastName}`.trim(),
-      cnic: r.employee.panNumber?.trim() || '—',
-      account: r.employee.bankAccountNumber?.trim() || '—',
+      cnic: r.employee.panNumber?.trim() || '',
+      account: r.employee.bankAccountNumber?.trim() || '',
       amount: r.netSalary,
-      bank: r.employee.bankName?.trim() || '—',
+      bank: r.employee.bankName?.trim() || '',
     }));
 
-    const html = generateBankDisbursementHTML(month, year, rows);
+    const logo = getLogoBase64();
+    const html = generateBankDisbursementHTML(month, year, rows, logo);
     const filename = `Salary_Disbursement_${MONTH_NAMES[month - 1]}_${year}.html`;
 
     return new NextResponse(html, {
