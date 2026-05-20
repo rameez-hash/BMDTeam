@@ -12,7 +12,9 @@ import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
 import ManualPayrollModal, { type ManualPayrollRecord } from '../../components/payroll/ManualPayrollModal';
+import DeductionBreakdownCell from '../../components/payroll/DeductionBreakdownCell';
 import { payslipNotesForDisplay } from '@/lib/payslip-display';
+import { financialYearOptions, getCurrentFinancialYear } from '@/lib/financial-year';
 
 interface PayrollRecord {
   id: string;
@@ -57,6 +59,32 @@ interface PayrollRecord {
     department?: { id?: string; name: string };
   };
   manualDeductions?: { id: string; label: string; amount: number; reason?: string }[];
+}
+
+interface TaxMonthRow {
+  month: number;
+  year: number;
+  monthLabel: string;
+  grossEarnings: number;
+  tds: number;
+  netSalary: number;
+  status: string;
+}
+
+interface TaxEmployeeRecord {
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode?: string | null;
+    panNumber?: string | null;
+    department?: { name: string };
+  };
+  months: TaxMonthRow[];
+  totalGross: number;
+  totalTax: number;
+  monthCount: number;
 }
 
 interface EmployeeSalary {
@@ -126,7 +154,14 @@ function PayrollPageContent() {
   const [generateYear, setGenerateYear] = useState(new Date().getFullYear());
   const [generateDepartmentId, setGenerateDepartmentId] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'records' | 'generate' | 'salaries'>('records');
+  const [activeTab, setActiveTab] = useState<'records' | 'generate' | 'salaries' | 'tax'>('records');
+  const [taxFinancialYear, setTaxFinancialYear] = useState(getCurrentFinancialYear());
+  const [taxDepartmentFilter, setTaxDepartmentFilter] = useState('');
+  const [taxRecords, setTaxRecords] = useState<TaxEmployeeRecord[]>([]);
+  const [taxSummary, setTaxSummary] = useState<{ employees: number; totalTaxWithheld: number; totalGross: number } | null>(null);
+  const [taxPeriodLabel, setTaxPeriodLabel] = useState('');
+  const [taxLoading, setTaxLoading] = useState(false);
+  const [expandedTaxEmployee, setExpandedTaxEmployee] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [collapsedDepts, setCollapsedDepts] = useState<Set<string>>(new Set());
 
@@ -217,6 +252,31 @@ function PayrollPageContent() {
     } catch { setIsPayrollLocked(false); }
   }, [token, generateMonth, generateYear, isAdminOrHR]);
 
+  const fetchTaxRecords = useCallback(async () => {
+    if (!token) return;
+    setTaxLoading(true);
+    try {
+      const params = new URLSearchParams({ financialYear: taxFinancialYear });
+      if (taxDepartmentFilter) params.append('departmentId', taxDepartmentFilter);
+      const res = await fetch(`/api/payroll/tax-records?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTaxRecords(data.data || []);
+        setTaxSummary(data.summary || null);
+        setTaxPeriodLabel(data.periodLabel || '');
+      } else {
+        setTaxRecords([]);
+        setTaxSummary(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tax records:', err);
+    } finally {
+      setTaxLoading(false);
+    }
+  }, [token, taxFinancialYear, taxDepartmentFilter]);
+
   useEffect(() => {
     if (!token) return;
     if (isAdminOrHR) {
@@ -226,10 +286,13 @@ function PayrollPageContent() {
     if (activeTab === 'records' || !isAdminOrHR) {
       setLoading(true);
       fetchPayroll();
+    } else if (activeTab === 'tax' && isAdminOrHR) {
+      setLoading(false);
+      fetchTaxRecords();
     } else {
       setLoading(false);
     }
-  }, [token, fetchPayroll, fetchEmployees, fetchDepartments, activeTab, isAdminOrHR]);
+  }, [token, fetchPayroll, fetchEmployees, fetchDepartments, fetchTaxRecords, activeTab, isAdminOrHR]);
 
   useEffect(() => {
     if (token && isAdminOrHR && activeTab === 'generate') {
@@ -394,6 +457,23 @@ function PayrollPageContent() {
     }
   };
 
+  const downloadTaxSlip = async (employeeId: string) => {
+    try {
+      const params = new URLSearchParams({ employeeId, financialYear: taxFinancialYear });
+      const res = await fetch(`/api/payroll/tax-slip?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const html = await res.text();
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); w.onload = () => setTimeout(() => w.print(), 500); }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toastRef.current.error(data.error || 'No tax record for this period');
+      }
+    } catch {
+      toastRef.current.error('Failed to generate tax certificate');
+    }
+  };
+
   const downloadPayslip = async (id: string) => {
     try {
       const res = await fetch(`/api/payroll/payslip?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -404,6 +484,33 @@ function PayrollPageContent() {
       }
     } catch {
       toastRef.current.error('Failed to generate payslip');
+    }
+  };
+
+  const downloadBankPdf = async () => {
+    try {
+      const params = new URLSearchParams({
+        month: month.toString(),
+        year: year.toString(),
+      });
+      if (departmentFilter) params.append('departmentId', departmentFilter);
+      const res = await fetch(`/api/payroll/bank-disbursement?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const w = window.open('', '_blank');
+        if (w) {
+          w.document.write(html);
+          w.document.close();
+          w.onload = () => setTimeout(() => w.print(), 500);
+        }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toastRef.current.error(data.error || 'Generate payroll for this month first');
+      }
+    } catch {
+      toastRef.current.error('Failed to generate bank PDF');
     }
   };
 
@@ -509,7 +616,27 @@ function PayrollPageContent() {
       ),
     },
     { key: 'gross', header: 'Gross', render: (r: PayrollRecord) => <span className="font-medium">{formatPKR(r.grossEarnings)}</span> },
-    { key: 'ded', header: 'Deductions', render: (r: PayrollRecord) => <span className="text-red-600 font-medium">-{formatPKR(r.totalDeductions)}</span> },
+    {
+      key: 'ded',
+      header: 'Deductions',
+      render: (r: PayrollRecord) => (
+        <DeductionBreakdownCell
+          tds={r.tds}
+          pf={r.pf}
+          esi={r.esi}
+          professionalTax={r.professionalTax}
+          lateDeduction={r.lateDeduction}
+          absentDeduction={r.absentDeduction}
+          otherDeductions={r.otherDeductions}
+          manualDeduction={r.manualDeduction}
+          manualDeductions={r.manualDeductions}
+          lateDays={r.lateDays}
+          absentDays={r.absentDays}
+          halfDays={r.halfDays}
+          totalDeductions={r.totalDeductions}
+        />
+      ),
+    },
     { key: 'net', header: 'Net Salary', render: (r: PayrollRecord) => <span className="font-bold text-emerald-700">{formatPKR(r.netSalary)}</span> },
     {
       key: 'status', header: 'Status',
@@ -581,7 +708,9 @@ function PayrollPageContent() {
                   ? `Generate · ${getMonthName(generateMonth)} ${generateYear}`
                   : activeTab === 'salaries'
                     ? 'Employee salary structures'
-                    : `${getMonthName(month)} ${year} · ${records.length} record${records.length !== 1 ? 's' : ''}`}
+                    : activeTab === 'tax'
+                      ? `Tax records · FY ${taxFinancialYear}`
+                      : `${getMonthName(month)} ${year} · ${records.length} record${records.length !== 1 ? 's' : ''}`}
               </p>
             </div>
           </div>
@@ -595,6 +724,7 @@ function PayrollPageContent() {
           {([
             { id: 'records' as const, label: 'View Records' },
             { id: 'generate' as const, label: 'Generate' },
+            { id: 'tax' as const, label: 'Tax Records' },
             { id: 'salaries' as const, label: 'Salaries' },
           ]).map(t => (
             <button
@@ -726,6 +856,12 @@ function PayrollPageContent() {
                   <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                   PDF Payslips
                 </Button>
+                {isAdminOrHR && (
+                  <Button size="sm" variant="primary" onClick={downloadBankPdf} className="bg-teal-700 hover:bg-teal-800 border-0">
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+                    Bank PDF
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -976,6 +1112,133 @@ function PayrollPageContent() {
               <li>• Pakistan FBR income tax slabs</li>
               <li>• PF & EOBI deductions</li>
             </ul>
+          </Card>
+        </>
+      )}
+
+      {/* ─── TAX RECORDS TAB ─── */}
+      {activeTab === 'tax' && isAdminOrHR && (
+        <>
+          <Card className="border border-slate-200">
+            <p className="text-xs text-slate-500 mb-3 px-1">
+              Income tax (TDS) withheld per employee for FBR return. Download tax certificate to share with employee.
+            </p>
+            <div className="flex flex-wrap items-end gap-4">
+              <Select
+                label="Financial year"
+                value={taxFinancialYear}
+                onChange={(e) => setTaxFinancialYear(e.target.value)}
+                options={financialYearOptions(8)}
+                className="w-56"
+              />
+              <Select
+                label="Department"
+                value={taxDepartmentFilter}
+                onChange={(e) => setTaxDepartmentFilter(e.target.value)}
+                options={[{ value: '', label: 'All departments' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+                className="w-44"
+              />
+              <Button onClick={fetchTaxRecords} loading={taxLoading}>
+                Load records
+              </Button>
+            </div>
+            {taxPeriodLabel && <p className="text-xs text-teal-700 mt-2 font-medium">Period: {taxPeriodLabel}</p>}
+          </Card>
+
+          {taxSummary && (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200">
+                <p className="text-xs text-violet-600 font-medium">Employees with tax</p>
+                <p className="text-xl font-bold text-violet-900">{taxSummary.employees}</p>
+              </Card>
+              <Card className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200">
+                <p className="text-xs text-red-600 font-medium">Total tax withheld (TDS)</p>
+                <p className="text-lg font-bold text-red-900">{formatPKR(taxSummary.totalTaxWithheld)}</p>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-200">
+                <p className="text-xs text-blue-600 font-medium">Total taxable gross</p>
+                <p className="text-lg font-bold text-blue-900">{formatPKR(taxSummary.totalGross)}</p>
+              </Card>
+            </div>
+          )}
+
+          <Card padding={false} className="border border-slate-200">
+            <CardHeader>
+              <CardTitle>Employee tax summary · FY {taxFinancialYear}</CardTitle>
+            </CardHeader>
+            {taxLoading ? (
+              <div className="p-8 text-center text-slate-500">Loading tax records…</div>
+            ) : taxRecords.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">No tax deductions found for this financial year.</div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {taxRecords.map((row) => (
+                  <div key={row.employeeId} className="px-4 sm:px-6 py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900">
+                          {row.employee.firstName} {row.employee.lastName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {row.employee.employeeCode || '—'} · {row.employee.department?.name || '—'}
+                          {row.employee.panNumber && ` · CNIC/NTN: ${row.employee.panNumber}`}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-1">
+                          {row.monthCount} month(s) · Gross {formatPKR(row.totalGross)} ·{' '}
+                          <span className="text-red-600 font-semibold">Tax {formatPKR(row.totalTax)}</span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            setExpandedTaxEmployee(expandedTaxEmployee === row.employeeId ? null : row.employeeId)
+                          }
+                        >
+                          {expandedTaxEmployee === row.employeeId ? 'Hide months' : 'View months'}
+                        </Button>
+                        <Button size="sm" variant="primary" onClick={() => downloadTaxSlip(row.employeeId)}>
+                          Download tax slip
+                        </Button>
+                      </div>
+                    </div>
+                    {expandedTaxEmployee === row.employeeId && (
+                      <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                        <table className="w-full text-xs">
+                          <thead className="bg-slate-50 text-slate-600">
+                            <tr>
+                              <th className="text-left px-3 py-2">Month</th>
+                              <th className="text-right px-3 py-2">Gross</th>
+                              <th className="text-right px-3 py-2">Tax (TDS)</th>
+                              <th className="text-right px-3 py-2">Net</th>
+                              <th className="text-left px-3 py-2">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {row.months.map((m) => (
+                              <tr key={`${m.year}-${m.month}`} className="border-t border-slate-100">
+                                <td className="px-3 py-2 font-medium">{m.monthLabel}</td>
+                                <td className="px-3 py-2 text-right">{formatPKR(m.grossEarnings)}</td>
+                                <td className="px-3 py-2 text-right text-red-600 font-medium">{formatPKR(m.tds)}</td>
+                                <td className="px-3 py-2 text-right">{formatPKR(m.netSalary)}</td>
+                                <td className="px-3 py-2">{m.status}</td>
+                              </tr>
+                            ))}
+                            <tr className="border-t-2 border-slate-200 bg-slate-50 font-semibold">
+                              <td className="px-3 py-2">Total</td>
+                              <td className="px-3 py-2 text-right">{formatPKR(row.totalGross)}</td>
+                              <td className="px-3 py-2 text-right text-red-700">{formatPKR(row.totalTax)}</td>
+                              <td colSpan={2} />
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
         </>
       )}

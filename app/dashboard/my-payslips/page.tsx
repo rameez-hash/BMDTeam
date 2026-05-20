@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { payslipNotesForDisplay } from '@/lib/payslip-display';
+import { financialYearOptions, getCurrentFinancialYear } from '@/lib/financial-year';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
 
@@ -74,6 +76,9 @@ export default function MyPayslipsPage() {
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState<number | ''>('');
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null);
+  const [taxFinancialYear, setTaxFinancialYear] = useState(getCurrentFinancialYear());
+  const [taxEmployeeId, setTaxEmployeeId] = useState<string | null>(null);
+  const [taxTotal, setTaxTotal] = useState<number | null>(null);
 
   const fetchPayslips = useCallback(async () => {
     if (!token) return;
@@ -99,6 +104,54 @@ export default function MyPayslipsPage() {
   useEffect(() => {
     fetchPayslips();
   }, [fetchPayslips]);
+
+  const fetchMyTaxSummary = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/payroll/tax-records?financialYear=${taxFinancialYear}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const row = (data.data || [])[0];
+        if (row) {
+          setTaxEmployeeId(row.employeeId);
+          setTaxTotal(row.totalTax);
+        } else {
+          setTaxEmployeeId(null);
+          setTaxTotal(null);
+        }
+      }
+    } catch {
+      setTaxEmployeeId(null);
+      setTaxTotal(null);
+    }
+  }, [token, taxFinancialYear]);
+
+  useEffect(() => {
+    fetchMyTaxSummary();
+  }, [fetchMyTaxSummary]);
+
+  const downloadTaxSlip = async () => {
+    if (!taxEmployeeId) {
+      toastRef.current.error('No tax deductions found for this financial year');
+      return;
+    }
+    try {
+      const params = new URLSearchParams({ employeeId: taxEmployeeId, financialYear: taxFinancialYear });
+      const res = await fetch(`/api/payroll/tax-slip?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const html = await res.text();
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); w.onload = () => setTimeout(() => w.print(), 500); }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toastRef.current.error(data.error || 'Failed to generate tax certificate');
+      }
+    } catch {
+      toastRef.current.error('Failed to generate tax certificate');
+    }
+  };
 
   const downloadPayslip = async (id: string) => {
     try {
@@ -160,6 +213,29 @@ export default function MyPayslipsPage() {
           </select>
         </div>
       </div>
+
+      <Card className="border border-violet-200 bg-violet-50/50">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4 justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-violet-900">Tax certificate (for FBR return)</h3>
+            <p className="text-xs text-violet-800 mt-1">
+              Annual tax withheld this FY: {taxTotal != null ? formatPKR(taxTotal) : '—'}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <Select
+              label="Financial year"
+              value={taxFinancialYear}
+              onChange={(e) => setTaxFinancialYear(e.target.value)}
+              options={financialYearOptions(6)}
+              className="w-52"
+            />
+            <Button variant="primary" onClick={downloadTaxSlip} disabled={!taxEmployeeId}>
+              Download tax slip
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {/* Year Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

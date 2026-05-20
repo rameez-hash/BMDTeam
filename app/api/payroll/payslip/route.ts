@@ -8,9 +8,6 @@ import { payslipNotesForDisplay } from '@/lib/payslip-display';
 import fs from 'fs';
 import path from 'path';
 
-const COMPANY_NAME = 'BMD Digital';
-const COMPANY_TAGLINE = 'Human Resources · Salary Statement';
-
 // --- PKR Currency Formatter ---
 const formatPKR = (amount: number) => {
   if (!amount && amount !== 0) return 'Rs 0';
@@ -418,10 +415,6 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
         <div class="header-top">
           <div class="header-left">
             ${logoHTML}
-            <div>
-              <div class="company-name">${COMPANY_NAME}</div>
-              <div class="company-sub">${COMPANY_TAGLINE}</div>
-            </div>
           </div>
           <div class="header-right">
             <div class="slip-title">Salary Slip</div>
@@ -590,7 +583,6 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
       </div>
       
       <div class="footer">
-        <p class="company-line">${COMPANY_NAME}</p>
         <p>This is a system-generated salary statement for the pay period shown above.</p>
         <p>For payroll queries, contact the Human Resources department.</p>
         <p class="confidential">Confidential — for the addressee only. Unauthorized copying or distribution is prohibited.</p>
