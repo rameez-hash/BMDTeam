@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRequirePermission } from '../../hooks/useRequirePermission';
 import AccessDenied from '../../components/AccessDenied';
@@ -51,7 +51,7 @@ interface PayrollRecord {
     firstName: string;
     lastName: string;
     employeeCode?: string;
-    department?: { name: string };
+    department?: { id?: string; name: string };
   };
   manualDeductions?: { id: string; label: string; amount: number; reason?: string }[];
 }
@@ -61,7 +61,7 @@ interface EmployeeSalary {
   firstName: string;
   lastName: string;
   employeeCode?: string;
-  department?: { name: string };
+  department?: { id?: string; name: string };
   designation?: string;
   salary?: {
     basicSalary: number;
@@ -119,7 +119,11 @@ function PayrollPageContent() {
   const [statusFilter, setStatusFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'payroll' | 'salaries'>('payroll');
+  const [generateMonth, setGenerateMonth] = useState(new Date().getMonth() + 1);
+  const [generateYear, setGenerateYear] = useState(new Date().getFullYear());
+  const [generateDepartmentId, setGenerateDepartmentId] = useState('');
+
+  const [activeTab, setActiveTab] = useState<'records' | 'generate' | 'salaries'>('records');
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [collapsedDepts, setCollapsedDepts] = useState<Set<string>>(new Set());
 
@@ -141,6 +145,14 @@ function PayrollPageContent() {
   const [payrollLockDay, setPayrollLockDay] = useState(0);
 
   const isAdminOrHR = user?.role === 'ADMIN' || user?.role === 'HR';
+
+  const eligibleGenerateCount = useMemo(
+    () =>
+      employees.filter(
+        (e) => e.salary && (!generateDepartmentId || e.department?.id === generateDepartmentId)
+      ).length,
+    [employees, generateDepartmentId]
+  );
 
   const fetchPayroll = useCallback(async () => {
     try {
@@ -191,27 +203,40 @@ function PayrollPageContent() {
   const fetchPayrollLockStatus = useCallback(async () => {
     if (!isAdminOrHR) return;
     try {
-      const res = await fetch(`/api/payroll/settings?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`/api/payroll/settings?month=${generateMonth}&year=${generateYear}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setIsPayrollLocked(data.data?.isPayrollLocked || false);
         setPayrollLockDay(data.data?.payrollLockDay || 0);
       }
     } catch { setIsPayrollLocked(false); }
-  }, [token, month, year, isAdminOrHR]);
+  }, [token, generateMonth, generateYear, isAdminOrHR]);
 
   useEffect(() => {
-    if (token) {
-      fetchPayroll();
-      if (isAdminOrHR) { fetchEmployees(); fetchDepartments(); fetchPayrollLockStatus(); }
+    if (!token) return;
+    if (isAdminOrHR) {
+      fetchEmployees();
+      fetchDepartments();
     }
-  }, [token, fetchPayroll, fetchEmployees, fetchDepartments, fetchPayrollLockStatus, isAdminOrHR]);
+    if (activeTab === 'records' || !isAdminOrHR) {
+      setLoading(true);
+      fetchPayroll();
+    } else {
+      setLoading(false);
+    }
+  }, [token, fetchPayroll, fetchEmployees, fetchDepartments, activeTab, isAdminOrHR]);
+
+  useEffect(() => {
+    if (token && isAdminOrHR && activeTab === 'generate') {
+      fetchPayrollLockStatus();
+    }
+  }, [token, activeTab, fetchPayrollLockStatus, isAdminOrHR]);
 
   const handleGeneratePayroll = async () => {
     setGenerateLoading(true);
     try {
-      const payload: { month: number; year: number; departmentId?: string } = { month, year };
-      if (departmentFilter) payload.departmentId = departmentFilter;
+      const payload: { month: number; year: number; departmentId?: string } = { month: generateMonth, year: generateYear };
+      if (generateDepartmentId) payload.departmentId = generateDepartmentId;
 
       const res = await fetch('/api/payroll', {
         method: 'POST',
@@ -221,6 +246,10 @@ function PayrollPageContent() {
       const data = await res.json();
       if (res.ok) {
         toastRef.current.success(data.message || 'Payroll generated successfully');
+        setMonth(generateMonth);
+        setYear(generateYear);
+        setActiveTab('records');
+        setLoading(true);
         fetchPayroll();
       } else {
         toastRef.current.error(data.error || 'Failed to generate payroll');
@@ -525,7 +554,13 @@ function PayrollPageContent() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">Payroll Management</h1>
-              <p className="text-teal-100 text-sm mt-0.5">{getMonthName(month)} {year} · {records.length} record{records.length !== 1 ? 's' : ''}</p>
+              <p className="text-teal-100 text-sm mt-0.5">
+                {activeTab === 'generate'
+                  ? `Generate · ${getMonthName(generateMonth)} ${generateYear}`
+                  : activeTab === 'salaries'
+                    ? 'Employee salary structures'
+                    : `${getMonthName(month)} ${year} · ${records.length} record${records.length !== 1 ? 's' : ''}`}
+              </p>
             </div>
           </div>
 
@@ -536,7 +571,8 @@ function PayrollPageContent() {
       {isAdminOrHR && (
         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
           {([
-            { id: 'payroll' as const, label: 'Records' },
+            { id: 'records' as const, label: 'View Records' },
+            { id: 'generate' as const, label: 'Generate' },
             { id: 'salaries' as const, label: 'Salaries' },
           ]).map(t => (
             <button
@@ -553,7 +589,7 @@ function PayrollPageContent() {
       )}
 
       {/* Loading Skeleton */}
-      {loading && (
+      {loading && (activeTab === 'records' || !isAdminOrHR) && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[1,2,3,4].map(i => (
@@ -586,7 +622,7 @@ function PayrollPageContent() {
       )}
 
       {/* ─── PAYROLL RECORDS TAB ─── */}
-      {activeTab === 'payroll' && !loading && (
+      {activeTab === 'records' && !loading && (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -628,8 +664,9 @@ function PayrollPageContent() {
             </Card>
           </div>
 
-          {/* Filters */}
+          {/* View filters — list only; does not affect Generate tab */}
           <Card className="border border-slate-200">
+            <p className="text-xs text-slate-500 mb-3 px-1">Filter which payroll records to view (read-only).</p>
             <div className="flex flex-wrap items-end gap-4">
               <Select label="Month" value={month.toString()} onChange={(e) => setMonth(parseInt(e.target.value))} options={MONTHS} className="w-36" />
               <Input label="Year" type="number" value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="w-28" />
@@ -639,43 +676,12 @@ function PayrollPageContent() {
                 { value: 'CANCELLED', label: 'Cancelled' },
               ]} className="w-32" />
               {isAdminOrHR && (
-                <Select label="Department" value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}
-                  options={[{ value: '', label: 'All Depts' }, ...departments.map(d => ({ value: d.id, label: d.name }))]} className="w-44" />
+                <Select label="View department" value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}
+                  options={[{ value: '', label: 'All departments' }, ...departments.map(d => ({ value: d.id, label: d.name }))]} className="w-44" />
               )}
-              <Button onClick={fetchPayroll}><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>Filter</Button>
-              {isAdminOrHR && (
-                <Button onClick={() => setShowGenerateConfirm(true)} disabled={generateLoading || isPayrollLocked} variant="success">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 mr-1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
-                  Generate Payroll
-                </Button>
-              )}
+              <Button onClick={() => { setLoading(true); fetchPayroll(); }}><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>Apply filter</Button>
             </div>
           </Card>
-
-          {/* Payroll Lock Warning */}
-          {isPayrollLocked && isAdminOrHR && (
-            <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-5 py-3">
-              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-orange-800">Payroll Generation Locked</p>
-                <p className="text-xs text-orange-600">
-                  Payroll generation is locked for {getMonthName(month)} {year}
-                  {payrollLockDay > 0 ? ` (auto-locked on ${payrollLockDay} ${getMonthName(month)})` : ''}.
-                  Go to Settings → Payroll to unlock.
-                </p>
-              </div>
-            </div>
-          )}
-          {!isPayrollLocked && payrollLockDay > 0 && isAdminOrHR && (
-            <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
-              </div>
-              <p className="text-sm text-amber-700">Payroll will auto-lock on <strong>{payrollLockDay} {getMonthName(month)} {year}</strong>. Generate before this date.</p>
-            </div>
-          )}
 
           {/* Export Bar — appears when records exist */}
           {records.length > 0 && (
@@ -840,11 +846,87 @@ function PayrollPageContent() {
                 <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" /></svg></div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">No Payroll Records</h3>
                 <p className="text-slate-500 mb-4">No records found for {getMonthName(month)} {year}</p>
-                {isAdminOrHR && !isPayrollLocked && <Button onClick={() => setShowGenerateConfirm(true)}>Generate Payroll</Button>}
-                {isAdminOrHR && isPayrollLocked && <p className="text-sm text-orange-600 font-medium">Payroll generation is locked for this month</p>}
+                {isAdminOrHR && (
+                  <Button onClick={() => setActiveTab('generate')}>Go to Generate tab</Button>
+                )}
               </div>
             </Card>
           )}
+        </>
+      )}
+
+      {/* ─── GENERATE TAB ─── */}
+      {activeTab === 'generate' && isAdminOrHR && (
+        <>
+          <Card className="border border-emerald-200 bg-emerald-50/40">
+            <p className="text-sm text-emerald-900 font-medium mb-1">Create new payroll records</p>
+            <p className="text-xs text-emerald-800">
+              Choose month, year, and scope here. This does not use filters on the View Records tab.
+              Already generated employees for that month are skipped automatically.
+            </p>
+          </Card>
+
+          <Card className="border border-slate-200">
+            <div className="flex flex-wrap items-end gap-4">
+              <Select label="Payroll month" value={generateMonth.toString()} onChange={(e) => setGenerateMonth(parseInt(e.target.value))} options={MONTHS} className="w-36" />
+              <Input label="Payroll year" type="number" value={generateYear} onChange={(e) => setGenerateYear(parseInt(e.target.value))} className="w-28" />
+              <Select
+                label="Generate for"
+                value={generateDepartmentId}
+                onChange={(e) => setGenerateDepartmentId(e.target.value)}
+                options={[{ value: '', label: 'All departments' }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
+                className="w-48"
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-3">
+              ~{eligibleGenerateCount} active employee{eligibleGenerateCount !== 1 ? 's' : ''} with salary
+              {generateDepartmentId ? ` in ${departments.find(d => d.id === generateDepartmentId)?.name ?? 'selected department'}` : ' (all departments)'}
+            </p>
+            <div className="mt-4">
+              <Button
+                onClick={() => setShowGenerateConfirm(true)}
+                disabled={generateLoading || isPayrollLocked || eligibleGenerateCount === 0}
+                variant="success"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 mr-1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
+                Generate Payroll
+              </Button>
+            </div>
+          </Card>
+
+          {isPayrollLocked && (
+            <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-5 py-3">
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-orange-800">Payroll Generation Locked</p>
+                <p className="text-xs text-orange-600">
+                  Locked for {getMonthName(generateMonth)} {generateYear}
+                  {payrollLockDay > 0 ? ` (auto-lock day: ${payrollLockDay})` : ''}. Unlock in Settings → Payroll.
+                </p>
+              </div>
+            </div>
+          )}
+          {!isPayrollLocked && payrollLockDay > 0 && (
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+              </div>
+              <p className="text-sm text-amber-700">Auto-lock on <strong>{payrollLockDay} {getMonthName(generateMonth)} {generateYear}</strong>.</p>
+            </div>
+          )}
+
+          <Card className="border border-blue-200 bg-blue-50/50">
+            <p className="text-xs font-medium text-blue-800 mb-1.5">Calculation includes:</p>
+            <ul className="text-[11px] text-blue-700 space-y-0.5">
+              <li>• Salary components (Basic + Allowances)</li>
+              <li>• Attendance-based absent deduction</li>
+              <li>• Late arrival deductions</li>
+              <li>• Pakistan FBR income tax slabs</li>
+              <li>• PF & EOBI deductions</li>
+            </ul>
+          </Card>
         </>
       )}
 
@@ -913,7 +995,7 @@ function PayrollPageContent() {
               </div>
               <h3 className="text-lg font-bold mb-2">Generate Payroll</h3>
               <p className="text-slate-600 text-sm mb-2">
-                {departmentFilter ? (
+                {generateDepartmentId ? (
                   <>
                     This will generate payroll for <strong>active employees in one department</strong> with salary assigned:
                   </>
@@ -924,12 +1006,13 @@ function PayrollPageContent() {
                 )}
               </p>
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
-                <p className="text-emerald-800 font-semibold">{getMonthName(month)} {year}</p>
+                <p className="text-emerald-800 font-semibold">{getMonthName(generateMonth)} {generateYear}</p>
                 <p className="text-sm text-emerald-700 mt-1">
-                  {departmentFilter
-                    ? departments.find((d) => d.id === departmentFilter)?.name ?? 'Selected department'
+                  {generateDepartmentId
+                    ? departments.find((d) => d.id === generateDepartmentId)?.name ?? 'Selected department'
                     : 'All departments'}
                 </p>
+                <p className="text-xs text-emerald-600 mt-1">~{eligibleGenerateCount} eligible employee{eligibleGenerateCount !== 1 ? 's' : ''}</p>
               </div>
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl mb-4 text-left">
                 <p className="text-xs font-medium text-blue-800 mb-1.5">Calculation includes:</p>
