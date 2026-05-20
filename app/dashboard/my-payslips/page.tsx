@@ -44,6 +44,7 @@ interface PayslipRecord {
   totalDeductions: number;
   netSalary: number;
   status: string;
+  isManual?: boolean;
   paidAt?: string;
   notes?: string;
   employee: {
@@ -70,14 +71,17 @@ export default function MyPayslipsPage() {
 
   const [payslips, setPayslips] = useState<PayslipRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState<number | ''>('');
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null);
 
   const fetchPayslips = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/payroll?year=${year}&limit=12`, {
+      const params = new URLSearchParams();
+      params.append('limit', '24');
+      if (year !== '') params.append('year', String(year));
+      const res = await fetch(`/api/payroll?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -112,9 +116,9 @@ export default function MyPayslipsPage() {
   const totalDeductions = payslips.reduce((s, p) => s + p.totalDeductions, 0);
   const totalNet = payslips.reduce((s, p) => s + p.netSalary, 0);
 
-  const yearOptions = [];
+  const yearOptions: { value: string; label: string }[] = [{ value: '', label: 'All years' }];
   const currYear = new Date().getFullYear();
-  for (let y = currYear; y >= currYear - 3; y--) {
+  for (let y = currYear; y >= currYear - 5; y--) {
     yearOptions.push({ value: y.toString(), label: y.toString() });
   }
 
@@ -135,8 +139,8 @@ export default function MyPayslipsPage() {
             </div>
           </div>
           <select
-            value={year.toString()}
-            onChange={(e) => setYear(parseInt(e.target.value))}
+            value={year === '' ? '' : year.toString()}
+            onChange={(e) => setYear(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             className="px-4 py-2.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 hover:bg-white/30 transition-all duration-200 appearance-none"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
@@ -243,7 +247,10 @@ export default function MyPayslipsPage() {
                     <p className="text-xs text-slate-500">{p.workingDays} working days</p>
                   </div>
                 </div>
-                <Badge variant={p.status === 'PAID' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'info'}>{p.status}</Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant={p.status === 'PAID' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'info'}>{p.status}</Badge>
+                  {p.isManual && <Badge variant="info">Manual</Badge>}
+                </div>
               </div>
 
               <div className="space-y-2 text-sm">
@@ -393,7 +400,7 @@ export default function MyPayslipsPage() {
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.2} stroke="currentColor" className="w-8 h-8 text-slate-400"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg></div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No Payslips</h3>
-            <p className="text-slate-500">No payslips found for {year}</p>
+            <p className="text-slate-500">{year === '' ? 'No payslips found yet' : `No payslips found for ${year}`}</p>
           </div>
         </Card>
       )}

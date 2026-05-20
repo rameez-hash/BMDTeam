@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
+import { notify } from '@/lib/notifications';
 import { calculatePayrollTotals, num } from '@/lib/payroll-totals';
 
 const employeeInclude = {
@@ -157,6 +158,23 @@ export async function POST(request: NextRequest) {
       description: `Created manual payroll for ${record.employee.firstName} ${record.employee.lastName} (${data.month}/${data.year})`,
       request,
     });
+
+    const empUser = await prisma.employee.findUnique({
+      where: { id: data.employeeId },
+      select: { userId: true },
+    });
+    if (empUser?.userId) {
+      const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      await notify({
+        userId: empUser.userId,
+        title: 'Payslip Available',
+        message: `Your payslip for ${monthNames[data.month]} ${data.year} has been added. View it in My Payslips.`,
+        type: 'PAYROLL_GENERATED',
+        module: 'payroll',
+        resourceId: record.id,
+        link: '/dashboard/my-payslips',
+      });
+    }
 
     return NextResponse.json({ success: true, data: record });
   } catch (error) {
