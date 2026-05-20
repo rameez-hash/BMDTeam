@@ -137,26 +137,32 @@ function generateBankDisbursementHTML(
       width: 174mm;
       max-width: 174mm;
       margin: 0 auto;
-      min-height: 260mm;
+      min-height: 277mm;
       padding: 0 2mm;
     }
     .watermark {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 340px;
-      height: 340px;
-      opacity: 0.055;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       z-index: 0;
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .watermark-img {
+      width: 72mm;
+      height: 72mm;
+      opacity: 0.05;
       background-repeat: no-repeat;
       background-position: center;
       background-size: contain;
       ${watermarkStyle}
     }
     @media print {
-      .watermark { opacity: 0.065; }
+      .watermark-img { opacity: 0.06; }
     }
     .letter-content {
       position: relative;
@@ -164,42 +170,60 @@ function generateBankDisbursementHTML(
       width: 100%;
       margin: 0 auto;
     }
-    .letterhead {
-      text-align: center;
-      margin: 0 auto 18pt;
-      padding: 14pt 12pt 12pt;
-      background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
-      border: 1pt solid #e2e8f0;
-      border-radius: 2pt;
-    }
-    .letterhead-rule {
-      height: 3pt;
-      background: #0f766e;
-      margin: 10pt auto 0;
+    .letterhead-banner {
+      position: relative;
       width: 100%;
-      max-width: 140mm;
+      min-height: 26mm;
+      margin-bottom: 20pt;
+      overflow: hidden;
     }
-    .letterhead-rule-thin {
-      height: 0.5pt;
+    .header-deco {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 58%;
+      height: 28mm;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .header-deco .shape {
+      position: absolute;
+      right: 0;
+      height: 6.5mm;
+      clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+    }
+    .header-deco .shape-1 {
+      top: 0;
+      width: 100%;
+      background: #1e293b;
+    }
+    .header-deco .shape-2 {
+      top: 5.5mm;
+      width: 88%;
+      background: #475569;
+    }
+    .header-deco .shape-3 {
+      top: 11mm;
+      width: 76%;
       background: #94a3b8;
-      margin: 2pt auto 0;
-      width: 100%;
-      max-width: 140mm;
+    }
+    .header-deco .shape-4 {
+      top: 16.5mm;
+      width: 64%;
+      background: #cbd5e1;
+    }
+    .header-logo-wrap {
+      position: relative;
+      z-index: 2;
+      padding: 2mm 0 0 1mm;
+      text-align: left;
     }
     .header-logo {
-      height: 56px;
+      height: 50px;
       width: auto;
-      max-width: 220px;
+      max-width: 200px;
       object-fit: contain;
       display: block;
-      margin: 0 auto 8pt;
-    }
-    .letterhead-sub {
-      font-size: 9pt;
-      color: #0f766e;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      font-weight: 600;
     }
     .letter-body {
       width: 100%;
@@ -213,6 +237,9 @@ function generateBankDisbursementHTML(
       margin-bottom: 10pt;
       text-align: justify;
       hyphens: auto;
+    }
+    .para strong {
+      font-weight: 700;
     }
     .table-wrap {
       width: 100%;
@@ -333,13 +360,18 @@ function generateBankDisbursementHTML(
     <button type="button" onclick="window.print()">Print / Save as PDF</button>
   </div>
   <div class="page-sheet">
-    ${logoBase64 ? '<div class="watermark" aria-hidden="true"></div>' : ''}
+    ${logoBase64 ? `<div class="watermark" aria-hidden="true"><div class="watermark-img"></div></div>` : ''}
     <div class="letter-content">
-    <header class="letterhead">
-      ${headerLogo}
-      <p class="letterhead-sub">Salary Disbursement Request</p>
-      <div class="letterhead-rule"></div>
-      <div class="letterhead-rule-thin"></div>
+    <header class="letterhead-banner">
+      <div class="header-deco" aria-hidden="true">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+      </div>
+      <div class="header-logo-wrap">
+        ${headerLogo}
+      </div>
     </header>
     <div class="letter-body">
     <p class="date-to">Date: ${dateStr} To,</p>
@@ -349,7 +381,7 @@ function generateBankDisbursementHTML(
     <p class="to-block">Dear Sir/Madam,</p>
     <p class="para">
       We request you to kindly disburse the salaries of our employees as per the details mentioned
-      below, for the month of ${monthName} ${year}. The total amount to be credited is Rs.${formatAmount(total)} and the
+      below, for the month of <strong>${monthName} ${year}</strong>. The total amount to be credited is <strong>Rs.${formatAmount(total)}</strong> and the
       details are as follows:
     </p>
     <div class="table-wrap">
