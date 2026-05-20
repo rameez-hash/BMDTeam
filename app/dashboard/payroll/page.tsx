@@ -210,10 +210,13 @@ function PayrollPageContent() {
   const handleGeneratePayroll = async () => {
     setGenerateLoading(true);
     try {
+      const payload: { month: number; year: number; departmentId?: string } = { month, year };
+      if (departmentFilter) payload.departmentId = departmentFilter;
+
       const res = await fetch('/api/payroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ month, year }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -910,10 +913,23 @@ function PayrollPageContent() {
               </div>
               <h3 className="text-lg font-bold mb-2">Generate Payroll</h3>
               <p className="text-slate-600 text-sm mb-2">
-                This will generate payroll for <strong>all active employees</strong> with salary assigned for:
+                {departmentFilter ? (
+                  <>
+                    This will generate payroll for <strong>active employees in one department</strong> with salary assigned:
+                  </>
+                ) : (
+                  <>
+                    This will generate payroll for <strong>all active employees (all departments)</strong> with salary assigned:
+                  </>
+                )}
               </p>
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
                 <p className="text-emerald-800 font-semibold">{getMonthName(month)} {year}</p>
+                <p className="text-sm text-emerald-700 mt-1">
+                  {departmentFilter
+                    ? departments.find((d) => d.id === departmentFilter)?.name ?? 'Selected department'
+                    : 'All departments'}
+                </p>
               </div>
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl mb-4 text-left">
                 <p className="text-xs font-medium text-blue-800 mb-1.5">Calculation includes:</p>
