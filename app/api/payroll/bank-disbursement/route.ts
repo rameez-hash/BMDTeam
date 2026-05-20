@@ -153,8 +153,8 @@ function generateBankDisbursementHTML(
       justify-content: center;
     }
     .watermark-img {
-      width: 72mm;
-      height: 72mm;
+      width: 115mm;
+      height: 115mm;
       opacity: 0.05;
       background-repeat: no-repeat;
       background-position: center;
@@ -374,7 +374,8 @@ function generateBankDisbursementHTML(
       </div>
     </header>
     <div class="letter-body">
-    <p class="date-to">Date: ${dateStr} To,</p>
+    <p class="date-to">Date: ${dateStr}</p>
+    <p class="to-block">To,</p>
     <div class="to-block">
       <p>The Branch Manager</p>
     </div>
