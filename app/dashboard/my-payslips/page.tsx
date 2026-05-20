@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { payslipNotesForDisplay } from '@/lib/payslip-display';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -249,7 +250,6 @@ export default function MyPayslipsPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge variant={p.status === 'PAID' ? 'success' : p.status === 'DRAFT' ? 'warning' : 'info'}>{p.status}</Badge>
-                  {p.isManual && <Badge variant="info">Manual</Badge>}
                 </div>
               </div>
 
@@ -299,11 +299,9 @@ export default function MyPayslipsPage() {
               {selectedPayslip.employee.department && <div><p className="text-xs text-slate-500">Department</p><p className="font-medium text-slate-900">{selectedPayslip.employee.department.name}</p></div>}
             </div>
 
-            {/* Pro-rate Note */}
-            {selectedPayslip.notes && (
-              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4">
-                <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p className="text-xs text-blue-700">{selectedPayslip.notes}</p>
+            {payslipNotesForDisplay(selectedPayslip.notes) && (
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 mb-4">
+                <p className="text-xs text-slate-700"><span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px] mr-2">Remarks</span>{payslipNotesForDisplay(selectedPayslip.notes)}</p>
               </div>
             )}
 

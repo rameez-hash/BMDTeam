@@ -12,6 +12,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
 import ManualPayrollModal, { type ManualPayrollRecord } from '../../components/payroll/ManualPayrollModal';
+import { payslipNotesForDisplay } from '@/lib/payslip-display';
 
 interface PayrollRecord {
   id: string;
@@ -490,7 +491,7 @@ function PayrollPageContent() {
         <div>
           <p className="font-semibold text-slate-900">{r.employee.firstName} {r.employee.lastName}</p>
           <p className="text-xs text-slate-500">{r.employee.employeeCode} • {r.employee.department?.name || '-'}</p>
-          {r.notes && <p className="text-[10px] text-blue-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{r.notes}</p>}
+          {payslipNotesForDisplay(r.notes) && <p className="text-[10px] text-blue-600 mt-0.5 flex items-center gap-1"><svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{payslipNotesForDisplay(r.notes)}</p>}
         </div>
       ),
     },
@@ -928,10 +929,9 @@ function PayrollPageContent() {
           </Card>
 
           <Card className="border border-violet-200 bg-violet-50/40">
-            <p className="text-sm font-medium text-violet-900 mb-1">Manual payslips (pre-HRMS / historical)</p>
+            <p className="text-sm font-medium text-violet-900 mb-1">Historical salary records</p>
             <p className="text-xs text-violet-800 mb-3">
-              Enter the same fields as an auto payslip — attendance, earnings, deductions, net. No attendance required (start at zero).
-              Duplicate month per employee is blocked.
+              Add payslips for past months with the same fields as monthly payroll. Duplicate month per employee is blocked.
             </p>
             <Button
               variant="primary"

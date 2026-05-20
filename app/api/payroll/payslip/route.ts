@@ -4,8 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authenticate } from '@/lib/middleware';
 import { formatDate } from '@/lib/utils';
+import { payslipNotesForDisplay } from '@/lib/payslip-display';
 import fs from 'fs';
 import path from 'path';
+
+const COMPANY_NAME = 'BMD Digital';
+const COMPANY_TAGLINE = 'Human Resources · Salary Statement';
 
 // --- PKR Currency Formatter ---
 const formatPKR = (amount: number) => {
@@ -26,51 +30,86 @@ function getLogoBase64(): string {
 
 // --- Shared CSS for payslip (single source of truth) ---
 const payslipCSS = `
+  @page { size: A4; margin: 12mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    padding: 20px;
-    color: #1e293b;
-    background: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+    padding: 16px;
+    color: #0f172a;
+    background: #f1f5f9;
     font-size: 11px;
+    line-height: 1.45;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   .payslip-container {
     max-width: 210mm;
-    margin: 0 auto 30px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    margin: 0 auto 24px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
     overflow: hidden;
     page-break-after: always;
   }
   .header {
-    background: #1e293b;
-    color: white;
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    background: linear-gradient(135deg, #0f766e 0%, #115e59 55%, #134e4a 100%);
+    color: #fff;
+    padding: 20px 28px 18px;
+    border-bottom: 4px solid #0d9488;
   }
-  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 14px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
   .header-logo img {
-    height: 32px;
+    height: 44px;
+    width: auto;
     object-fit: contain;
     filter: brightness(0) invert(1);
   }
-  .company-name { font-size: 18px; font-weight: 700; }
-  .company-sub { font-size: 9px; opacity: 0.7; margin-top: 1px; }
-  .header-right { text-align: right; }
-  .header-right .slip-title {
-    font-size: 13px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 2px;
-    opacity: 0.9;
+  .company-name { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+  .company-sub { font-size: 9px; opacity: 0.88; margin-top: 3px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .header-right { text-align: right; flex-shrink: 0; }
+  .slip-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
   }
-  .header-right .slip-period {
-    font-size: 11px; opacity: 0.7; margin-top: 2px;
+  .slip-period {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.95;
   }
-  .content { padding: 20px 24px; }
+  .slip-ref {
+    font-size: 9px;
+    opacity: 0.75;
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+  }
+  .meta-pill {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+  }
+  .content { padding: 22px 28px 20px; }
 
   .employee-info {
     display: grid;
@@ -99,10 +138,28 @@ const payslipCSS = `
 
   .attendance-summary {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
     margin-bottom: 18px;
   }
+  .remarks-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #0d9488;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+  }
+  .remarks-box label {
+    display: block;
+    font-size: 8px;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .remarks-box p { font-size: 10.5px; color: #334155; }
   .attendance-item {
     text-align: center;
     padding: 10px 6px;
@@ -189,14 +246,15 @@ const payslipCSS = `
   }
 
   .net-salary-section {
-    background: #1e293b;
-    border-radius: 8px;
-    padding: 18px 20px;
+    background: linear-gradient(90deg, #0f766e, #115e59);
+    border-radius: 6px;
+    padding: 16px 22px;
     color: white;
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 18px;
+    border: 1px solid #0d9488;
   }
   .net-salary-label {
     font-size: 11px;
@@ -210,27 +268,6 @@ const payslipCSS = `
     font-weight: 800;
     font-family: 'Courier New', monospace;
     letter-spacing: 1px;
-  }
-
-  .bank-details {
-    background: #f8fafc;
-    border-radius: 6px;
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    border: 1px solid #e2e8f0;
-  }
-  .bank-details h3 {
-    font-size: 10px;
-    color: #475569;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 700;
-  }
-  .bank-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
   }
 
   .status-section {
@@ -253,19 +290,36 @@ const payslipCSS = `
 
   .footer {
     text-align: center;
-    padding: 12px 24px;
-    border-top: 1px solid #e2e8f0;
+    padding: 14px 28px 16px;
+    border-top: 2px solid #e2e8f0;
     background: #f8fafc;
   }
+  .footer .company-line {
+    font-size: 9px;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
   .footer p {
-    margin: 1px 0;
-    color: #94a3b8;
+    margin: 2px 0;
+    color: #64748b;
     font-size: 8.5px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .footer .gen-date {
-    margin-top: 4px;
+    margin-top: 8px;
     font-size: 8px;
-    color: #cbd5e1;
+    color: #94a3b8;
+  }
+  .footer .confidential {
+    margin-top: 6px;
+    font-size: 7.5px;
+    color: #94a3b8;
+    font-style: italic;
   }
 
   .action-bar {
@@ -309,10 +363,17 @@ const payslipCSS = `
 
   @media print {
     body { padding: 0; background: white; }
-    .payslip-container { box-shadow: none; border-radius: 0; border: none; margin: 0; }
+    .payslip-container { box-shadow: none; border: none; margin: 0; max-width: 100%; }
     .action-bar { display: none !important; }
   }
 `;
+
+const statusLabel: Record<string, string> = {
+  PAID: 'Paid',
+  PROCESSED: 'Processed',
+  DRAFT: 'Draft',
+  CANCELLED: 'Cancelled',
+};
 
 // --- Generate single payslip HTML div ---
 function generatePayslipHTML(payroll: any, logoBase64: string) {
@@ -323,6 +384,9 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
   ];
   const periodMonth = monthNames[payroll.month - 1];
   const periodYear = payroll.year;
+  const slipRef = `${emp.employeeCode || emp.id}-${String(payroll.month).padStart(2, '0')}${payroll.year}`;
+  const displayNotes = payslipNotesForDisplay(payroll.notes);
+  const statusText = statusLabel[payroll.status] || payroll.status;
 
   const totalEarnings =
     payroll.basicSalary +
@@ -351,14 +415,24 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
   return `
     <div class="payslip-container">
       <div class="header">
-        <div class="header-left">
-          ${logoHTML}
-          <div>
-            <div class="company-name">Salary Slip</div>
+        <div class="header-top">
+          <div class="header-left">
+            ${logoHTML}
+            <div>
+              <div class="company-name">${COMPANY_NAME}</div>
+              <div class="company-sub">${COMPANY_TAGLINE}</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="slip-title">Salary Slip</div>
+            <div class="slip-period">${periodMonth} ${periodYear}</div>
+            <div class="slip-ref">Ref: ${slipRef}</div>
           </div>
         </div>
-        <div class="header-right">
-          <div class="slip-period">${periodMonth} ${periodYear}</div>
+        <div class="header-meta">
+          <span class="meta-pill">Pay period: ${periodMonth} ${periodYear}</span>
+          <span class="meta-pill">Status: ${statusText}</span>
+          ${payroll.paidAt ? `<span class="meta-pill">Paid: ${formatDate(payroll.paidAt)}</span>` : ''}
         </div>
       </div>
       
@@ -390,10 +464,10 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
           </div>
         </div>
         
-        ${payroll.notes ? `
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-          <span style="color: #3b82f6; font-size: 14px;">&#9432;</span>
-          <span style="font-size: 11px; color: #1e40af;">${payroll.notes}</span>
+        ${displayNotes ? `
+        <div class="remarks-box">
+          <label>Remarks</label>
+          <p>${displayNotes.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
         </div>
         ` : ''}
         
@@ -475,7 +549,7 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
             
             ${payroll.manualDeductions && payroll.manualDeductions.length > 0 ? `
             <div class="deduction-subsection">
-              <div class="deduction-subsection-label">Manual Deductions</div>
+              <div class="deduction-subsection-label">Additional Deductions</div>
               ${payroll.manualDeductions.map((d: { label: string; amount: number; reason?: string | null }) => `
                 <div class="item">
                   <div>
@@ -487,10 +561,10 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
               `).join('')}
             </div>` : payroll.manualDeduction ? `
             <div class="deduction-subsection">
-              <div class="deduction-subsection-label">Manual Deductions</div>
+              <div class="deduction-subsection-label">Additional Deductions</div>
               <div class="item">
                 <div>
-                  <span class="item-label">Manual Deduction</span>
+                  <span class="item-label">Other Deduction</span>
                   ${payroll.deductionReason ? `<div class="item-detail">${payroll.deductionReason}</div>` : ''}
                 </div>
                 <span class="item-value">${formatPKR(payroll.manualDeduction)}</span>
@@ -510,26 +584,17 @@ function generatePayslipHTML(payroll: any, logoBase64: string) {
           <div class="net-salary-value">${formatPKR(payroll.netSalary)}</div>
         </div>
         
-        ${emp.bankName || emp.bankAccountNumber ? `
-        <div class="bank-details">
-          <h3>Bank Details</h3>
-          <div class="bank-grid">
-            ${emp.bankName ? `<div class="info-group"><label>Bank Name</label><span>${emp.bankName}</span></div>` : ''}
-            ${emp.bankAccountNumber ? `<div class="info-group"><label>Account Number</label><span>XXXX${emp.bankAccountNumber.slice(-4)}</span></div>` : ''}
-            ${emp.ifscCode ? `<div class="info-group"><label>Branch Code</label><span>${emp.ifscCode}</span></div>` : ''}
-          </div>
-        </div>` : ''}
-        
         <div class="status-section">
-          <span class="status-badge status-${payroll.status.toLowerCase()}">${payroll.status}</span>
-          ${payroll.paidAt ? `<p style="margin-top: 6px; color: #64748b; font-size: 10px;">Paid on: ${formatDate(payroll.paidAt)}</p>` : ''}
+          <span class="status-badge status-${payroll.status.toLowerCase()}">${statusText}</span>
         </div>
       </div>
       
       <div class="footer">
-        <p>This is a computer-generated payslip and does not require a signature.</p>
-        <p>For any queries, please contact the HR department.</p>
-        <p class="gen-date">Generated on: ${new Date().toLocaleString('en-PK')}</p>
+        <p class="company-line">${COMPANY_NAME}</p>
+        <p>This is a system-generated salary statement for the pay period shown above.</p>
+        <p>For payroll queries, contact the Human Resources department.</p>
+        <p class="confidential">Confidential — for the addressee only. Unauthorized copying or distribution is prohibited.</p>
+        <p class="gen-date">Document generated: ${new Date().toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}</p>
       </div>
     </div>
   `;
@@ -571,9 +636,6 @@ const employeeSelectFields = {
   phone: true,
   joiningDate: true,
   designation: true,
-  bankName: true,
-  bankAccountNumber: true,
-  ifscCode: true,
   panNumber: true,
   department: { select: { name: true } },
 };

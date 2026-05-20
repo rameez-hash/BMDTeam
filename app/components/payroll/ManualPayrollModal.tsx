@@ -89,7 +89,7 @@ const emptyForm = (month: number, year: number) => ({
   absentDeduction: 0,
   otherDeductions: 0,
   manualDeduction: 0,
-  notes: 'Manual entry — pre-HRMS / paid outside system',
+  notes: '',
   deductionReason: '',
   paymentReference: '',
   status: 'DRAFT',
@@ -267,8 +267,8 @@ export default function ManualPayrollModal({
       size="xl"
     >
       <div className="p-4 sm:p-6 max-h-[80vh] overflow-y-auto space-y-6">
-        <p className="text-sm text-slate-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          For months before HRMS or when attendance was not tracked. All fields match auto payslips — enter amounts as paid historically.
+        <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          Add a salary record for a past month. Enter earnings and deductions as on the final payment. Notes are optional and only appear on the slip if you add them.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -366,7 +366,12 @@ export default function ManualPayrollModal({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input label="Notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input
+            label="Remarks (optional)"
+            value={form.notes}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+            placeholder="Shown on payslip only if needed"
+          />
           <Input label="Payment reference" value={form.paymentReference} onChange={(e) => setForm((f) => ({ ...f, paymentReference: e.target.value }))} />
           <Input label="Deduction reason" value={form.deductionReason} onChange={(e) => setForm((f) => ({ ...f, deductionReason: e.target.value }))} className="sm:col-span-2" />
         </div>
