@@ -579,6 +579,7 @@ model PayrollRecord {
   netSalary         Float         @map("net_salary")
   
   status            PayrollStatus @default(DRAFT)
+  isManual          Boolean       @default(false) @map("is_manual")
   generatedAt       DateTime      @default(now()) @map("generated_at")
   paidAt            DateTime?     @map("paid_at")
   createdAt         DateTime      @default(now()) @map("created_at")

@@ -11,6 +11,7 @@ import { Table } from '../../components/ui/Table';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
+import ManualPayrollModal, { type ManualPayrollRecord } from '../../components/payroll/ManualPayrollModal';
 
 interface PayrollRecord {
   id: string;
@@ -43,6 +44,7 @@ interface PayrollRecord {
   totalDeductions: number;
   netSalary: number;
   status: string;
+  isManual?: boolean;
   paidAt?: string;
   notes?: string;
   paymentReference?: string;
@@ -141,6 +143,8 @@ function PayrollPageContent() {
 
   const [generateLoading, setGenerateLoading] = useState(false);
   const [showGenerateConfirm, setShowGenerateConfirm] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualEditRecord, setManualEditRecord] = useState<ManualPayrollRecord | null>(null);
   const [isPayrollLocked, setIsPayrollLocked] = useState(false);
   const [payrollLockDay, setPayrollLockDay] = useState(0);
 
@@ -511,6 +515,7 @@ function PayrollPageContent() {
       render: (r: PayrollRecord) => (
         <div>
           {getStatusBadge(r.status)}
+          {r.isManual && <Badge variant="info" className="mt-1">Manual</Badge>}
           {r.paidAt && <p className="text-[10px] text-slate-400 mt-1">{new Date(r.paidAt).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' })}</p>}
         </div>
       ),
@@ -525,6 +530,22 @@ function PayrollPageContent() {
           <Button size="sm" variant="ghost" onClick={() => downloadPayslip(r.id)} title="Download">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </Button>
+          {isAdminOrHR && r.isManual && (r.status === 'DRAFT' || r.status === 'PROCESSED' || r.status === 'PAID') && (
+            <Button
+              size="sm"
+              variant="ghost"
+              title="Edit manual payslip"
+              onClick={() => {
+                setManualEditRecord({
+                  ...r,
+                  employeeId: r.employee.id,
+                } as ManualPayrollRecord);
+                setShowManualModal(true);
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            </Button>
+          )}
           {isAdminOrHR && (r.status === 'DRAFT' || r.status === 'PROCESSED') && (
             <>
               <Button size="sm" variant="ghost" onClick={() => handleOpenDeductions(r)} title="Deductions">
@@ -847,7 +868,10 @@ function PayrollPageContent() {
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">No Payroll Records</h3>
                 <p className="text-slate-500 mb-4">No records found for {getMonthName(month)} {year}</p>
                 {isAdminOrHR && (
-                  <Button onClick={() => setActiveTab('generate')}>Go to Generate tab</Button>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <Button onClick={() => setActiveTab('generate')}>Generate (auto)</Button>
+                    <Button variant="secondary" onClick={() => { setManualEditRecord(null); setShowManualModal(true); }}>Add Manual Payslip</Button>
+                  </div>
                 )}
               </div>
             </Card>
@@ -882,16 +906,42 @@ function PayrollPageContent() {
               ~{eligibleGenerateCount} active employee{eligibleGenerateCount !== 1 ? 's' : ''} with salary
               {generateDepartmentId ? ` in ${departments.find(d => d.id === generateDepartmentId)?.name ?? 'selected department'}` : ' (all departments)'}
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-3">
               <Button
                 onClick={() => setShowGenerateConfirm(true)}
                 disabled={generateLoading || isPayrollLocked || eligibleGenerateCount === 0}
                 variant="success"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 mr-1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
-                Generate Payroll
+                Generate Payroll (auto)
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setManualEditRecord(null);
+                  setShowManualModal(true);
+                }}
+              >
+                Add Manual Payslip
               </Button>
             </div>
+          </Card>
+
+          <Card className="border border-violet-200 bg-violet-50/40">
+            <p className="text-sm font-medium text-violet-900 mb-1">Manual payslips (pre-HRMS / historical)</p>
+            <p className="text-xs text-violet-800 mb-3">
+              Enter the same fields as an auto payslip — attendance, earnings, deductions, net. No attendance required (start at zero).
+              Duplicate month per employee is blocked.
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setManualEditRecord(null);
+                setShowManualModal(true);
+              }}
+            >
+              + Add Manual Payslip
+            </Button>
           </Card>
 
           {isPayrollLocked && (
@@ -984,6 +1034,29 @@ function PayrollPageContent() {
           </Card>
         </>
       )}
+
+      <ManualPayrollModal
+        isOpen={showManualModal}
+        onClose={() => {
+          setShowManualModal(false);
+          setManualEditRecord(null);
+        }}
+        token={token || ''}
+        employees={employees}
+        months={MONTHS}
+        getMonthName={getMonthName}
+        editRecord={manualEditRecord}
+        defaultMonth={generateMonth}
+        defaultYear={generateYear}
+        onSaved={() => {
+          setMonth(manualEditRecord?.month ?? generateMonth);
+          setYear(manualEditRecord?.year ?? generateYear);
+          setActiveTab('records');
+          setLoading(true);
+          fetchPayroll();
+        }}
+        toast={toast}
+      />
 
       {/* ─── GENERATE CONFIRMATION DIALOG ─── */}
       {showGenerateConfirm && (
