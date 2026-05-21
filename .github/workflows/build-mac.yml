@@ -78,14 +78,17 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           RELEASE_TAG="v${VERSION}"
-          DMG_FILE=$(ls output/*.dmg | head -1)
           UPLOAD_NAME="BMD-HRMS-${VERSION}.dmg"
-          cp "$DMG_FILE" "output/${UPLOAD_NAME}"
+          UPLOAD_PATH="output/${UPLOAD_NAME}"
+          DMG_FILE=$(ls output/*.dmg | head -1)
+          if [ "$(basename "$DMG_FILE")" != "$UPLOAD_NAME" ]; then
+            cp "$DMG_FILE" "$UPLOAD_PATH"
+          fi
           
           gh release view "$RELEASE_TAG" --repo ${{ github.repository }} 2>/dev/null || \
             gh release create "$RELEASE_TAG" --repo ${{ github.repository }} --title "BMD HRMS v${VERSION}" --notes "Desktop app v${VERSION} — macOS DMG"
           
-          gh release upload "$RELEASE_TAG" "output/${UPLOAD_NAME}" --repo ${{ github.repository }} --clobber
+          gh release upload "$RELEASE_TAG" "$UPLOAD_PATH" --repo ${{ github.repository }} --clobber
           echo "Mac DMG uploaded to ${RELEASE_TAG} as ${UPLOAD_NAME}"
           gh release view "$RELEASE_TAG" --repo ${{ github.repository }} --json assets -q '.assets[].name'
 
@@ -115,7 +118,7 @@ jobs:
         shell: bash
         run: |
           node -e "
-          const rcedit = require('rcedit');
+          const { rcedit } = require('rcedit');
           rcedit('output/win-unpacked/BMD HRMS.exe', {
             icon: 'assets/iconbmd.ico',
             'version-string': {
@@ -140,13 +143,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
+          VERSION=$(node -p "require('./package.json').version")
+          RELEASE_TAG="v${VERSION}"
+          UPLOAD_NAME="BMD-HRMS-Setup-${VERSION}.exe"
+          UPLOAD_PATH="output/${UPLOAD_NAME}"
           EXE_FILE=$(ls output/*.exe | grep -i setup | head -1)
-          cp "$EXE_FILE" "output/BMD.HRMS.Setup.1.5.0.exe"
+          if [ "$(basename "$EXE_FILE")" != "$UPLOAD_NAME" ]; then
+            cp "$EXE_FILE" "$UPLOAD_PATH"
+          fi
           
-          # Create release if it doesn't exist
-          gh release view v1.5.0 --repo ${{ github.repository }} 2>/dev/null || \
-            gh release create v1.5.0 --repo ${{ github.repository }} --title "BMD HRMS v1.5.0" --notes "Desktop app v1.5.0 - Auto-update, AM/PM shift time, avatar fix, checkout missing"
+          gh release view "$RELEASE_TAG" --repo ${{ github.repository }} 2>/dev/null || \
+            gh release create "$RELEASE_TAG" --repo ${{ github.repository }} --title "BMD HRMS v${VERSION}" --notes "Desktop app v${VERSION}"
           
-          gh release upload v1.5.0 "output/BMD.HRMS.Setup.1.5.0.exe" --repo ${{ github.repository }} --clobber
-          echo "Windows installer uploaded!"
-          gh release view v1.5.0 --repo ${{ github.repository }} --json assets -q '.assets[].name'
+          gh release upload "$RELEASE_TAG" "$UPLOAD_PATH" --repo ${{ github.repository }} --clobber
+          echo "Windows installer uploaded to ${RELEASE_TAG} as ${UPLOAD_NAME}"
+          gh release view "$RELEASE_TAG" --repo ${{ github.repository }} --json assets -q '.assets[].name'
