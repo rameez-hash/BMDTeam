@@ -168,8 +168,8 @@ export default function LoginPage() {
         </div>
 
         {/* Desktop App Download */}
-        <div className="mt-3 flex flex-col items-center gap-1">
-          <span className="text-[10px] text-slate-400">Desktop App v1.9.1</span>
+        <div className="mt-3 flex flex-col items-center gap-1.5">
+          <span className="text-[10px] text-slate-400">Desktop App — attendance</span>
           <div className="flex gap-2">
           <a
             href="/api/download/desktop?platform=win"
@@ -179,7 +179,7 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             Windows
-            <span className="text-[9px] text-slate-400 font-normal">(.exe)</span>
+            <span className="text-[9px] text-slate-400 font-normal">v1.9.1</span>
           </a>
           <a
             href="/api/download/desktop?platform=mac"
@@ -189,7 +189,7 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             macOS
-            <span className="text-[9px] text-slate-400 font-normal">(.dmg)</span>
+            <span className="text-[9px] text-slate-400 font-normal">v1.9.1</span>
           </a>
           </div>
         </div>

@@ -57,7 +57,8 @@
     "mac": {
       "target": "dmg",
       "icon": "assets/iconbmd.icns",
-      "category": "public.app-category.business"
+      "category": "public.app-category.business",
+      "artifactName": "BMD-HRMS-${version}.${ext}"
     },
     "linux": {
       "target": "AppImage",
