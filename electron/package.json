@@ -72,7 +72,7 @@
       "icon": "assets/iconbmd.icns",
       "category": "public.app-category.business",
       "artifactName": "BMD-HRMS-${version}.${ext}",
-      "identity": null,
+      "identity": "-",
       "gatekeeperAssess": false,
       "hardenedRuntime": false,
       "entitlements": "build/entitlements.mac.plist",

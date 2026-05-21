@@ -61,11 +61,17 @@ jobs:
           echo "Created iconbmd.icns"
           ls -la assets/iconbmd.icns
 
-      - name: Build macOS DMG
+      - name: Build and sign macOS app
         working-directory: electron
-        run: npx electron-builder --mac --universal --publish never
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          npx electron-builder --mac --universal --dir --publish never
+          APP_PATH=$(find output -name "BMD HRMS.app" -type d | head -1)
+          echo "Ad-hoc signing: $APP_PATH"
+          xattr -cr "$APP_PATH"
+          codesign --force --deep --sign - "$APP_PATH"
+          codesign --verify --verbose=2 "$APP_PATH"
+          PREPACKAGED=$(dirname "$APP_PATH")
+          npx electron-builder --mac --universal --prepackaged "$PREPACKAGED" --publish never
 
       - name: List output
         working-directory: electron

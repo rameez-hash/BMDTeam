@@ -192,6 +192,11 @@ export default function LoginPage() {
             <span className="text-[9px] text-slate-400 font-normal">v1.9.1</span>
           </a>
           </div>
+          <p className="text-[9px] text-slate-400 text-center leading-relaxed max-w-sm">
+            macOS: open DMG → drag to Applications → if blocked, open Terminal and run:{' '}
+            <span className="font-mono text-[8px]">xattr -cr /Applications/BMD\ HRMS.app</span>
+            {' '}then right-click app → Open
+          </p>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-3">
