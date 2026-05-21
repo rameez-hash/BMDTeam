@@ -156,5 +156,12 @@ jobs:
             gh release create "$RELEASE_TAG" --repo ${{ github.repository }} --title "BMD HRMS v${VERSION}" --notes "Desktop app v${VERSION}"
           
           gh release upload "$RELEASE_TAG" "$UPLOAD_PATH" --repo ${{ github.repository }} --clobber
+          BLOCKMAP="output/BMD-HRMS-Setup-${VERSION}.exe.blockmap"
+          if [ -f "$BLOCKMAP" ]; then
+            gh release upload "$RELEASE_TAG" "$BLOCKMAP" --repo ${{ github.repository }} --clobber
+          fi
+          if [ -f "output/latest.yml" ]; then
+            gh release upload "$RELEASE_TAG" "output/latest.yml" --repo ${{ github.repository }} --clobber
+          fi
           echo "Windows installer uploaded to ${RELEASE_TAG} as ${UPLOAD_NAME}"
           gh release view "$RELEASE_TAG" --repo ${{ github.repository }} --json assets -q '.assets[].name'
