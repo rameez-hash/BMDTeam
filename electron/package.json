@@ -56,12 +56,30 @@
     },
     "mac": {
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
       ],
       "icon": "assets/iconbmd.icns",
       "category": "public.app-category.business",
-      "artifactName": "BMD-HRMS-${version}.${ext}"
+      "artifactName": "BMD-HRMS-${version}.${ext}",
+      "identity": null,
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "sign": false
     },
     "linux": {
       "target": "AppImage",

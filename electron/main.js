@@ -61,20 +61,18 @@ function createWindow() {
 }
 
 function createTray() {
-  const iconPath = getAppIconPath();
-  
-  // Create a simple icon if file doesn't exist
-  let icon;
   try {
-    icon = nativeImage.createFromPath(iconPath);
+    const iconPath = getAppIconPath();
+    let icon = nativeImage.createFromPath(iconPath);
     if (icon.isEmpty()) {
-      icon = nativeImage.createEmpty();
+      icon = nativeImage.createFromPath(getIconPath('iconbmd.png'));
     }
-  } catch {
-    icon = nativeImage.createEmpty();
-  }
-  
-  tray = new Tray(icon);
+    if (icon.isEmpty()) {
+      console.warn('Tray icon missing, skipping menu bar icon');
+      return;
+    }
+
+    tray = new Tray(icon);
   
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open HRMS', click: () => mainWindow.show() },
@@ -98,6 +96,9 @@ function createTray() {
   tray.on('click', () => {
     mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
   });
+  } catch (err) {
+    console.error('Tray init failed:', err);
+  }
 }
 
 function sendToRenderer(channel, data) {

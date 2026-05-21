@@ -19,12 +19,6 @@ const PLATFORM_ASSETS: Record<string, AssetInfo & { fallback?: AssetInfo }> = {
     releaseTag: RELEASE_TAG,
     name: `BMD-HRMS-${DESKTOP_VERSION}.dmg`,
     mime: 'application/x-apple-diskimage',
-    // Until CI uploads latest Mac build to v1.9.1
-    fallback: {
-      releaseTag: 'v1.5.0',
-      name: 'BMD.HRMS-1.5.0.dmg',
-      mime: 'application/x-apple-diskimage',
-    },
   },
 };
 
