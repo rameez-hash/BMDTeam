@@ -69,7 +69,7 @@ jobs:
 
       - name: List output
         working-directory: electron
-        run: ls -la output/*.dmg || ls -la output/
+        run: ls -la output/*.dmg output/*.zip output/latest-mac.yml 2>/dev/null || ls -la output/
 
       - name: Upload Mac DMG to Release
         working-directory: electron
@@ -89,6 +89,13 @@ jobs:
             gh release create "$RELEASE_TAG" --repo ${{ github.repository }} --title "BMD HRMS v${VERSION}" --notes "Desktop app v${VERSION} — macOS DMG"
           
           gh release upload "$RELEASE_TAG" "$UPLOAD_PATH" --repo ${{ github.repository }} --clobber
+          ZIP_PATH="output/BMD-HRMS-${VERSION}.zip"
+          if [ -f "$ZIP_PATH" ]; then
+            gh release upload "$RELEASE_TAG" "$ZIP_PATH" --repo ${{ github.repository }} --clobber
+          fi
+          if [ -f "output/latest-mac.yml" ]; then
+            gh release upload "$RELEASE_TAG" "output/latest-mac.yml" --repo ${{ github.repository }} --clobber
+          fi
           echo "Mac DMG uploaded to ${RELEASE_TAG} as ${UPLOAD_NAME}"
           gh release view "$RELEASE_TAG" --repo ${{ github.repository }} --json assets -q '.assets[].name'
 

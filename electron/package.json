@@ -55,7 +55,10 @@
       "include": "installer.nsh"
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "assets/iconbmd.icns",
       "category": "public.app-category.business",
       "artifactName": "BMD-HRMS-${version}.${ext}"

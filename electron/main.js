@@ -78,6 +78,8 @@ function createTray() {
     { label: 'Start Break', click: () => sendToRenderer('quick-action', 'break-start') },
     { label: 'End Break', click: () => sendToRenderer('quick-action', 'break-end') },
     { type: 'separator' },
+    { label: 'Check for Updates', click: () => checkForAppUpdates() },
+    { type: 'separator' },
     { label: 'Quit', click: () => {
       app.isQuitting = true;
       app.quit();
@@ -139,6 +141,10 @@ autoUpdater.autoInstallOnAppQuit = true;
 autoUpdater.forceCodeSigning = false;
 let restartTimer = null;
 
+function checkForAppUpdates() {
+  autoUpdater.checkForUpdates().catch(err => console.error('Update check failed:', err));
+}
+
 autoUpdater.on('update-available', (info) => {
   console.log('Update available:', info.version);
 });
@@ -168,10 +174,9 @@ ipcMain.on('install-update-now', () => {
 app.whenReady().then(() => {
   createWindow();
   createTray();
-  // Check for updates 3 seconds after launch
-  setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(err => console.error('Update check failed:', err));
-  }, 3000);
+  // Check for updates 3 seconds after launch, then every 4 hours
+  setTimeout(() => checkForAppUpdates(), 3000);
+  setInterval(() => checkForAppUpdates(), 4 * 60 * 60 * 1000);
 });
 
 app.on('window-all-closed', () => {
