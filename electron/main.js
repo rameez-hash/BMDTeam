@@ -20,6 +20,12 @@ function getIconPath(filename) {
   return path.join(__dirname, 'assets', filename);
 }
 
+function getAppIconPath() {
+  // .ico works on Windows; macOS needs .png/.icns for dock & tray
+  const iconFile = process.platform === 'darwin' ? 'iconbmd.png' : 'iconbmd.ico';
+  return getIconPath(iconFile);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 620,
@@ -34,7 +40,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
-    icon: getIconPath('iconbmd.ico'),
+    icon: getAppIconPath(),
   });
 
   mainWindow.loadFile('index.html');
@@ -55,7 +61,7 @@ function createWindow() {
 }
 
 function createTray() {
-  const iconPath = getIconPath('iconbmd.ico');
+  const iconPath = getAppIconPath();
   
   // Create a simple icon if file doesn't exist
   let icon;
