@@ -1,4 +1,42 @@
 /** Shared gross / deduction / net calculation for payroll records */
+
+/** Gross minus income tax — base for attendance & fixed deductions after tax */
+export function getAfterTaxBase(grossEarnings: number, tds: number): number {
+  return Math.max(0, grossEarnings - tds);
+}
+
+/** Per-day rate from after-tax amount (late / absent deductions) */
+export function calculateAfterTaxDailyRate(
+  grossEarnings: number,
+  tds: number,
+  workingDays: number
+): number {
+  if (workingDays <= 0) return 0;
+  return getAfterTaxBase(grossEarnings, tds) / workingDays;
+}
+
+/** Scale profile deductions proportionally when income is after tax */
+export function scaleDeductionsToAfterTaxBase(
+  grossEarnings: number,
+  tds: number,
+  deductions: {
+    pf: number;
+    esi: number;
+    professionalTax: number;
+    otherDeductions: number;
+  }
+) {
+  if (grossEarnings <= 0) return deductions;
+  const ratio = getAfterTaxBase(grossEarnings, tds) / grossEarnings;
+  const scale = (n: number) => Math.round(n * ratio * 100) / 100;
+  return {
+    pf: scale(deductions.pf),
+    esi: scale(deductions.esi),
+    professionalTax: scale(deductions.professionalTax),
+    otherDeductions: scale(deductions.otherDeductions),
+  };
+}
+
 export type PayrollAmountFields = {
   basicSalary: number;
   hra: number;

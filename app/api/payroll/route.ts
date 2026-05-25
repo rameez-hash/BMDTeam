@@ -6,6 +6,7 @@ import { authenticate } from '@/lib/middleware';
 import { checkPermission } from '@/lib/permissions';
 import { logActivity, ActivityActions, ActivityModules } from '@/lib/activity-logger';
 import { getMonthRange, getWorkingDaysInMonth, getWorkDays, calculateLateDeduction, calculateTax } from '@/lib/utils';
+import { calculateAfterTaxDailyRate, scaleDeductionsToAfterTaxBase } from '@/lib/payroll-totals';
 
 /** Payroll month view needs many rows; global getPaginationParams caps at 100. */
 function getPayrollListPagination(searchParams: URLSearchParams): { page: number; limit: number; skip: number } {
@@ -329,9 +330,6 @@ export async function POST(request: NextRequest) {
       const proratedOtherAllow = Math.round(salary.otherAllowances * proRateRatio);
       const proratedGross = proratedBasic + proratedHra + proratedDa + proratedTa + proratedMedical + proratedOtherAllow;
       
-      // Daily rate based on pro-rated gross and eligible working days
-      const dailyRate = totalWorkingDays > 0 ? proratedGross / totalWorkingDays : 0;
-
       // Recalculate TDS using active tax slabs (based on full salary for annual projection)
       let tds = salary.tds;
       if (taxSlabs.length > 0) {
@@ -341,14 +339,34 @@ export async function POST(request: NextRequest) {
       if (isMidMonthJoin) {
         tds = Math.round(tds * proRateRatio);
       }
-      
-      // Pro-rate fixed deductions for mid-month joiners
+
+      const grossEarnings = proratedGross;
+
+      // Pro-rate fixed deductions for mid-month joiners, then scale to after-tax base
       const proratedPf = isMidMonthJoin ? Math.round(salary.pf * proRateRatio) : salary.pf;
       const proratedEsi = isMidMonthJoin ? Math.round(salary.esi * proRateRatio) : salary.esi;
       const proratedProfTax = isMidMonthJoin ? Math.round(salary.professionalTax * proRateRatio) : salary.professionalTax;
       const proratedOtherDed = isMidMonthJoin ? Math.round(salary.otherDeductions * proRateRatio) : salary.otherDeductions;
-      
-      // Calculate late deduction using daily rate (not full monthly salary)
+
+      const {
+        pf: scaledPf,
+        esi: scaledEsi,
+        professionalTax: scaledProfTax,
+        otherDeductions: scaledOtherDed,
+      } = scaleDeductionsToAfterTaxBase(grossEarnings, tds, {
+        pf: proratedPf,
+        esi: proratedEsi,
+        professionalTax: proratedProfTax,
+        otherDeductions: proratedOtherDed,
+      });
+
+      // Daily rate from after-tax amount (late / absent)
+      const dailyRate =
+        totalWorkingDays > 0
+          ? calculateAfterTaxDailyRate(grossEarnings, tds, totalWorkingDays)
+          : 0;
+
+      // Calculate late deduction using after-tax daily rate
       const lateDeduction = calculateLateDeduction(
         lateDays,
         dailyRate,
@@ -364,9 +382,9 @@ export async function POST(request: NextRequest) {
       // Absent day deduction
       const absentDeduction = Math.max(0, absentDays) * dailyRate;
 
-      // Calculate totals using pro-rated values
-      const grossEarnings = proratedGross;
-      const totalDeductions = proratedPf + proratedEsi + proratedProfTax + tds + proratedOtherDed + lateDeduction + absentDeduction;
+      // Tax first, then all other deductions from after-tax base
+      const totalDeductions =
+        tds + scaledPf + scaledEsi + scaledProfTax + scaledOtherDed + lateDeduction + absentDeduction;
       const netSalary = Math.max(0, grossEarnings - totalDeductions);
 
       // Create payroll record
@@ -391,13 +409,13 @@ export async function POST(request: NextRequest) {
           ta: proratedTa,
           medicalAllowance: proratedMedical,
           otherAllowances: proratedOtherAllow,
-          pf: proratedPf,
-          esi: proratedEsi,
-          professionalTax: proratedProfTax,
+          pf: scaledPf,
+          esi: scaledEsi,
+          professionalTax: scaledProfTax,
           tds,
           lateDeduction,
           absentDeduction,
-          otherDeductions: proratedOtherDed,
+          otherDeductions: scaledOtherDed,
           grossEarnings,
           totalDeductions,
           netSalary,
@@ -415,10 +433,10 @@ export async function POST(request: NextRequest) {
 
       // --- PF Contribution Tracking ---
       // If employee has PF enabled (pf > 0), create a PF contribution record
-      if (proratedPf > 0) {
+      if (scaledPf > 0) {
         // Employer contribution = same as employee (matching contribution)
-        const employerContribution = proratedPf;
-        const totalPfContribution = proratedPf + employerContribution;
+        const employerContribution = scaledPf;
+        const totalPfContribution = scaledPf + employerContribution;
 
         // Get previous running balance
         const lastPfRecord = await prisma.pFContribution.findFirst({
@@ -443,7 +461,7 @@ export async function POST(request: NextRequest) {
             payrollRecordId: record.id,
             month,
             year,
-            employeeContribution: proratedPf,
+            employeeContribution: scaledPf,
             employerContribution,
             totalContribution: totalPfContribution,
             runningBalance: newBalance,
@@ -452,7 +470,7 @@ export async function POST(request: NextRequest) {
           },
           update: {
             payrollRecordId: record.id,
-            employeeContribution: proratedPf,
+            employeeContribution: scaledPf,
             employerContribution,
             totalContribution: totalPfContribution,
             runningBalance: newBalance,
