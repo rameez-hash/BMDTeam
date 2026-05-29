@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
         const name = `${emp.firstName} ${emp.lastName}`;
         const recs = attendance.filter(a => a.employeeId === emp.id);
         const pres = recs.filter(a => a.status === 'PRESENT').length;
-        const late = recs.filter(a => isRecordLate(a, emp.shift?.startTime || '09:00', emp.shift?.graceTime || 15)).length;
+        const late = recs.filter(a => isRecordLate(a, a.shiftStartTime || emp.shift?.startTime || '09:00', a.shiftGraceTime || emp.shift?.graceTime || 15)).length;
         const leave = recs.filter(a => a.status === 'ON_LEAVE').length;
         const hrs = recs.reduce((s, a) => s + (a.workHours || 0), 0);
         const half = recs.filter(a => a.status === 'HALF_DAY').length;
@@ -298,8 +298,8 @@ export async function GET(request: NextRequest) {
         const brkDur = emp.shift?.breakDuration || 60;
         const grace = emp.shift?.graceTime || 15;
         const sLabel = sName.toLowerCase().includes('shift') ? sName : `${sName} Shift`;
-        const extraH = recs.reduce((s, a) => (a.workHours && a.workHours > std) ? s + (a.workHours - std) : s, 0);
-        const shortH = recs.reduce((s, a) => (a.workHours && a.workHours > 0 && a.workHours < std) ? s + (std - a.workHours) : s, 0);
+        const extraH = recs.reduce((s, a) => { const recStd = a.shiftStandardWorkHours || std; return (a.workHours && a.workHours > recStd) ? s + (a.workHours - recStd) : s; }, 0);
+        const shortH = recs.reduce((s, a) => { const recStd = a.shiftStandardWorkHours || std; return (a.workHours && a.workHours > 0 && a.workHours < recStd) ? s + (recStd - a.workHours) : s; }, 0);
 
         const pdfWorkDays = getWorkDays(emp.shift?.workDays);
         const pdfEffectiveStart = emp.attendanceStartDate
@@ -339,6 +339,12 @@ export async function GET(request: NextRequest) {
           let hHTML = '<span class="dim">—</span>', exHTML = '<span class="dim">—</span>', ciTag = '', coTag = '';
 
           if (rec) {
+            const recShiftStart = rec.shiftStartTime || sStart;
+            const recShiftEnd = rec.shiftEndTime || sEnd;
+            const recStd = rec.shiftStandardWorkHours || std;
+            const recGrace = rec.shiftGraceTime || grace;
+            const recShiftName = rec.shiftName || sName;
+            const recShiftLabel = recShiftName.toLowerCase().includes('shift') ? recShiftName : `${recShiftName} Shift`;
             const stMap: Record<string, { c: string; b: string; l: string }> = {
               PRESENT: { c: '#059669', b: '#f0fdf4', l: 'Present' },
               ABSENT: { c: '#dc2626', b: '#fef2f2', l: 'Absent' },
@@ -350,24 +356,24 @@ export async function GET(request: NextRequest) {
             const si = stMap[rec.status] || { c: '#6b7280', b: '#f8fafc', l: rec.status };
             stHTML = `<span class="pill" style="background:${si.b};color:${si.c};border:1px solid ${si.c}33">${si.l}</span>`;
             if (rec.checkIn) {
-              const lb = getCheckInLabel(new Date(rec.checkIn), sStart);
+              const lb = getCheckInLabel(new Date(rec.checkIn), recShiftStart);
               ciHTML = `<b>${formatTime(rec.checkIn)}</b>`;
               ciTag = `<span class="tag" style="background:${lb.color}12;color:${lb.color};border:1px solid ${lb.color}30">${lb.icon} ${lb.text}</span>`;
             }
             if (rec.checkOut) {
               coHTML = `<b>${formatTime(rec.checkOut)}</b>`;
               if (rec.workHours) {
-                const lb = getCheckOutLabel(rec.workHours, std);
+                const lb = getCheckOutLabel(rec.workHours, recStd);
                 coTag = `<span class="tag" style="background:${lb.color}12;color:${lb.color};border:1px solid ${lb.color}30">${lb.icon} ${lb.text}</span>`;
               }
             }
             hHTML = rec.workHours ? `<b>${fmtWorkHrMin(rec.workHours)}</b>` : '<span class="dim">—</span>';
             if (rec.workHours) {
-              const ex = rec.workHours - std;
+              const ex = rec.workHours - recStd;
               exHTML = ex > 0.08 ? `<span class="ex-plus">${fmtHrMin(ex)}</span>` : ex < -0.08 ? `<span class="ex-minus">${fmtHrMin(ex)}</span>` : `<span class="ex-zero">0m</span>`;
             }
             // Add Late tag after Present status — dynamically check
-            const isDynLate = isRecordLate(rec, sStart, grace);
+            const isDynLate = isRecordLate(rec, recShiftStart, recGrace);
             if (isDynLate && (rec.status === 'PRESENT' || rec.status === 'HALF_DAY')) {
               stHTML += ` <span class="pill" style="background:#fef2f2;color:#dc2626;border:1px solid #dc262633;margin-left:2px">Late</span>`;
             }
@@ -412,11 +418,14 @@ export async function GET(request: NextRequest) {
           dayRows += `<tr class="${rc}${isTdy ? ' rt' : ''}"><td class="tl"><div class="dc"><span class="dnum">${String(dNum).padStart(2, '0')}</span><span class="dname${isWk ? ' dwk' : ''}">${dn}</span></div></td><td class="tc">${ciHTML}<br>${ciTag}</td><td class="tc">${coHTML}<br>${coTag}</td><td class="tc">${brkHTML}</td><td class="tc">${hHTML}</td><td class="tc">${exHTML}</td><td class="tc">${locHTML}</td><td class="tc">${stHTML}</td></tr>`;
         }
 
-        empHTML += `<div class="es">
-<div class="eh"><div class="el"><div class="ea">${emp.firstName[0]}${emp.lastName[0]}</div><div><div class="en">${name}</div><div class="em">${emp.employeeCode} &bull; ${emp.department?.name || 'N/A'} &bull; ${emp.designation || 'N/A'}</div></div></div><div class="er">${sLabel} &bull; ${fmtShiftTime(sStart)}–${fmtShiftTime(sEnd)} &bull; ${std}h/day</div></div>
-<div class="sr"><div class="sc"><div class="sv">${pres}</div><div class="sl">Present</div></div><div class="sc"><div class="sv c-r">${absCnt}</div><div class="sl">Absent</div></div><div class="sc"><div class="sv c-y">${late}</div><div class="sl">Late</div></div><div class="sc"><div class="sv c-p">${leave}</div><div class="sl">Leave</div></div><div class="sc"><div class="sv">${half}</div><div class="sl">Half</div></div><div class="sc"><div class="sv">${hrs.toFixed(1)}</div><div class="sl">Hours</div></div><div class="sc"><div class="sv">+${extraH.toFixed(1)}</div><div class="sl">Extra</div></div><div class="sc"><div class="sv">-${shortH.toFixed(1)}</div><div class="sl">Short</div></div></div>
-<div class="sm">${allDates.length} Total &bull; ${workDays} Working &bull; ${wkCnt} Wknd &bull; ${holCnt} Hol &nbsp;|&nbsp; ${attPct}% Att. &bull; ${avgH.toFixed(1)}h/day avg &bull; ${onTime}/${pres} OnTime</div>
-<table class="dt"><thead><tr><th class="thl">Day</th><th>Check In</th><th>Check Out</th><th>Break</th><th>Hours</th><th>+/−</th><th>Location</th><th>Status</th></tr></thead><tbody>${dayRows}</tbody></table></div>`;
+        // Get the most recent shift info from records for header display
+        const lastRec = recs[recs.length - 1];
+        const displayShiftName = lastRec?.shiftName || sName;
+        const displayShiftStart = lastRec?.shiftStartTime || sStart;
+        const displayShiftEnd = lastRec?.shiftEndTime || sEnd;
+        const displayStd = lastRec?.shiftStandardWorkHours || std;
+        const displayShiftLabel = displayShiftName.toLowerCase().includes('shift') ? displayShiftName : `${displayShiftName} Shift`;
+        empHTML += `<div class="es"><div class="eh"><div class="el"><div class="ea">${emp.firstName[0]}${emp.lastName[0]}</div><div><div class="en">${name}</div><div class="em">${emp.employeeCode} &bull; ${emp.department?.name || 'N/A'} &bull; ${emp.designation || 'N/A'}</div></div></div><div class="er">${displayShiftLabel} &bull; ${fmtShiftTime(displayShiftStart)}-${fmtShiftTime(displayShiftEnd)} &bull; ${displayStd}h/day</div></div><div class="sr"><div class="sc"><div class="sv">${pres}</div><div class="sl">Present</div></div><div class="sc"><div class="sv c-r">${absCnt}</div><div class="sl">Absent</div></div><div class="sc"><div class="sv c-y">${late}</div><div class="sl">Late</div></div><div class="sc"><div class="sv c-p">${leave}</div><div class="sl">Leave</div></div><div class="sc"><div class="sv">${half}</div><div class="sl">Half</div></div><div class="sc"><div class="sv">${hrs.toFixed(1)}</div><div class="sl">Hours</div></div><div class="sc"><div class="sv">+${extraH.toFixed(1)}</div><div class="sl">Extra</div></div><div class="sc"><div class="sv">-${shortH.toFixed(1)}</div><div class="sl">Short</div></div></div><div class="sm">${allDates.length} Total &bull; ${workDays} Working &bull; ${wkCnt} Wknd &bull; ${holCnt} Hol &nbsp;|&nbsp; ${attPct}% Att. &bull; ${avgH.toFixed(1)}h/day avg &bull; ${onTime}/${pres} OnTime</div><table class="dt"><thead><tr><th class="thl">Day</th><th>Check In</th><th>Check Out</th><th>Break</th><th>Hours</th><th>+/-</th><th>Location</th><th>Status</th></tr></thead><tbody>${dayRows}</tbody></table></div>`;
       }
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Attendance Report — ${monthName}</title>
