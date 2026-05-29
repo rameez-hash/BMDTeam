@@ -102,6 +102,7 @@ const menuSections: MenuSection[] = [
           </svg>
         ),
         employeeOnly: true,
+        permission: 'attendance.view',
       },
       {
         name: 'Overtime',
@@ -127,6 +128,7 @@ const menuSections: MenuSection[] = [
           </svg>
         ),
         employeeOnly: true,
+        permission: 'leave.view',
       },
     ],
   },
