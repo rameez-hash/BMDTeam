@@ -501,7 +501,7 @@ function ReportsPageContent() {
                             const formatTime = (iso: unknown) => {
                               if (!iso) return '—';
                               const d = new Date(String(iso));
-                              return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                              return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' });
                             };
                             return (
                               <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
