@@ -55,7 +55,9 @@ export function formatDateTime(date: Date | string): string {
 
 export function formatTime(date: Date | string): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
-  return format(d, 'hh:mm a');
+  // Convert UTC to PKT (+5) before formatting
+  const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
+  return format(pkt, 'hh:mm a');
 }
 
 export function getStartOfDay(date: Date): Date {
