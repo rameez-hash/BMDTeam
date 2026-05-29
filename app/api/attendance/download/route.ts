@@ -235,26 +235,32 @@ export async function GET(request: NextRequest) {
         const hName = holidayMap.get(ds);
         const isBeforeStart = empEffectiveStart && date < empEffectiveStart;
         const dn = date.toLocaleDateString('en-US', { weekday: 'short' });
+        // Use shift snapshot from record if available, else fall back to current shift
+        const recShiftName = rec?.shiftName || sName;
+        const recShiftStart = rec?.shiftStartTime || sStart;
+        const recShiftEnd = rec?.shiftEndTime || sEnd;
+        const recStd = rec?.shiftStandardWorkHours || std;
+        const recGrace = rec?.shiftGraceTime || csvGrace;
         let st = isBeforeStart ? 'NOT_JOINED' : 'ABSENT', ci = '-', co = '-', wh = '-', eh = '-', cis = '-', cos = '-', brk = '0', lt = 'No', lm = '0';
         let brkDurStr = '-', locStr = '-';
         if (rec) {
           st = rec.status; ci = rec.checkIn ? formatTime(rec.checkIn) : '-';
           co = rec.checkOut ? formatTime(rec.checkOut) : '-';
           wh = rec.workHours ? fmtWorkHrMin(rec.workHours) : '-';
-          const ex = (rec.workHours || 0) - std;
+          const ex = (rec.workHours || 0) - recStd;
           eh = Math.abs(ex) > 0.08 ? fmtHrMin(ex) : '0m';
-          if (rec.checkIn) cis = getCheckInLabel(new Date(rec.checkIn), sStart).text;
-          if (rec.checkOut && rec.workHours) cos = getCheckOutLabel(rec.workHours, std).text;
+          if (rec.checkIn) cis = getCheckInLabel(new Date(rec.checkIn), recShiftStart).text;
+          if (rec.checkOut && rec.workHours) cos = getCheckOutLabel(rec.workHours, recStd).text;
           brk = rec.breaks.length.toString();
           const totalBrkMin = rec.breaks.reduce((s, b) => s + (b.duration || 0), 0);
           const brkDurH = Math.floor(totalBrkMin / 60), brkDurM = totalBrkMin % 60;
           brkDurStr = brkDurH > 0 ? `${brkDurH}h ${brkDurM}m` : `${brkDurM}m`;
           locStr = rec.workLocation || 'OFFICE';
-          const csvLate = isRecordLate(rec, sStart, csvGrace);
+          const csvLate = isRecordLate(rec, recShiftStart, recGrace);
           lt = csvLate ? 'Yes' : 'No'; lm = rec.lateMinutes.toString();
           if (csvLate) st = `${st} (Late)`;
         } else if (isWk) { st = 'WEEKEND'; } else if (hName) { st = `HOLIDAY (${hName})`; }
-        rows.push([emp.employeeCode, `${emp.firstName} ${emp.lastName}`, emp.department?.name || '', sName, ds, dn, fmtShiftTime(sStart), fmtShiftTime(sEnd), ci, co, wh, eh, cis, cos, brk, brkDurStr, locStr, st, lt, lm]);
+        rows.push([emp.employeeCode, `${emp.firstName} ${emp.lastName}`, emp.department?.name || '', recShiftName, ds, dn, fmtShiftTime(recShiftStart), fmtShiftTime(recShiftEnd), ci, co, wh, eh, cis, cos, brk, brkDurStr, locStr, st, lt, lm]);
       }
     }
 
